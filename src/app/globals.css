@@ -1,0 +1,355 @@
+@import "tailwindcss";
+
+/* ============================================================
+   MOTOJOBS.IN — PREMIUM WHITE DESIGN SYSTEM
+   Primary: #2563EB  |  Secondary: #0F172A  |  Bg: #F8FAFC
+   ============================================================ */
+
+@theme {
+  /* --- Brand palette (Apple / Stripe / Linear quality) --- */
+  --color-primary:       #2563EB;
+  --color-primary-dark:  #1D4ED8;
+  --color-primary-light: #3B82F6;
+  --color-primary-50:    #EFF6FF;
+  --color-primary-100:   #DBEAFE;
+  --color-primary-200:   #BFDBFE;
+  --color-primary-300:   #93C5FD;
+  --color-primary-400:   #60A5FA;
+  --color-primary-500:   #3B82F6;
+  --color-primary-600:   #2563EB;
+  --color-primary-700:   #1D4ED8;
+  --color-primary-800:   #1E40AF;
+  --color-primary-900:   #1E3A8A;
+
+  /* --- Ink / Text --- */
+  --color-ink:       #0F172A;
+  --color-ink-soft:  #334155;
+  --color-ink-muted: #64748B;
+  --color-ink-faint: #94A3B8;
+
+  /* --- Surface / Background --- */
+  --color-canvas:      #F8FAFC;
+  --color-surface:     #FFFFFF;
+  --color-line:        #E2E8F0;
+  --color-line-soft:   #F1F5F9;
+
+  /* --- Semantic --- */
+  --color-positive:       #10B981;
+  --color-positive-soft:  #ECFDF5;
+  --color-caution:        #F59E0B;
+  --color-caution-soft:   #FFFBEB;
+  --color-critical:       #EF4444;
+  --color-critical-soft:  #FEF2F2;
+
+  /* --- Radius --- */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  24px;
+  --radius-3xl:  32px;
+
+  /* --- Shadows (very soft, premium depth) --- */
+  --shadow-xs:    0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm:    0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 8px rgba(15, 23, 42, 0.04);
+  --shadow-md:    0 2px 4px rgba(15, 23, 42, 0.03), 0 8px 16px rgba(15, 23, 42, 0.06);
+  --shadow-lg:    0 4px 8px rgba(15, 23, 42, 0.04), 0 16px 32px rgba(15, 23, 42, 0.08);
+  --shadow-xl:    0 8px 16px rgba(15, 23, 42, 0.05), 0 32px 64px rgba(15, 23, 42, 0.10);
+  --shadow-primary: 0 4px 12px rgba(37, 99, 235, 0.20), 0 8px 24px rgba(37, 99, 235, 0.12);
+
+  /* --- Motion --- */
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-glide:   cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Typography --- */
+  --font-display: var(--font-sora), var(--font-inter), system-ui, sans-serif;
+  --font-sans:    var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: #FFFFFF;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'ss01';
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+    color: var(--color-ink);
+  }
+
+  ::selection {
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--color-primary-800);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+    background-clip: content-box;
+  }
+
+  /* Focus ring */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  /* ============================================================
+     SURFACES
+     ============================================================ */
+
+  .surface {
+    background: #FFFFFF;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .surface-raised {
+    background: #FFFFFF;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* ============================================================
+     LIFT INTERACTIONS
+     ============================================================ */
+
+  .lift {
+    transition:
+      transform 0.35s var(--ease-premium),
+      box-shadow 0.35s var(--ease-premium),
+      border-color 0.25s var(--ease-glide);
+    will-change: transform;
+  }
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: #CBD5E1;
+  }
+
+  .lift-sm {
+    transition:
+      transform 0.3s var(--ease-premium),
+      box-shadow 0.3s var(--ease-premium);
+    will-change: transform;
+  }
+  .lift-sm:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .press {
+    transition: transform 0.15s var(--ease-glide);
+  }
+  .press:active {
+    transform: scale(0.975);
+  }
+
+  /* Icon lift inside hovered cards */
+  .group:hover .icon-lift {
+    transform: translateY(-2px) scale(1.05);
+  }
+  .icon-lift {
+    transition: transform 0.35s var(--ease-premium);
+  }
+
+  .group:hover .arrow-slide {
+    transform: translateX(4px);
+  }
+  .arrow-slide {
+    transition: transform 0.3s var(--ease-premium);
+  }
+
+  /* ============================================================
+     ANIMATIONS
+     ============================================================ */
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-12px); }
+  }
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes progressSlide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+  @keyframes pulseRing {
+    0%   { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+  @keyframes slideInLeft {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(0); }
+  }
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fade-up  { animation: fadeUp 0.6s var(--ease-premium) forwards; }
+  .animate-fade-in  { animation: fadeIn 0.5s var(--ease-glide) forwards; }
+  .animate-scale-in { animation: scaleIn 0.3s var(--ease-premium) forwards; }
+  .animate-float    { animation: float 5s ease-in-out infinite; }
+  .animate-slide-in { animation: slideInLeft 0.3s var(--ease-premium) forwards; }
+
+  /* Staggered reveal helpers */
+  .stagger-1 { animation-delay: 0.05s; opacity: 0; }
+  .stagger-2 { animation-delay: 0.10s; opacity: 0; }
+  .stagger-3 { animation-delay: 0.15s; opacity: 0; }
+  .stagger-4 { animation-delay: 0.20s; opacity: 0; }
+  .stagger-5 { animation-delay: 0.25s; opacity: 0; }
+  .stagger-6 { animation-delay: 0.30s; opacity: 0; }
+
+  /* ============================================================
+     LOADING STATES
+     ============================================================ */
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      #F1F5F9 25%,
+      #F8FAFC 50%,
+      #F1F5F9 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+  }
+
+  .skeleton-text {
+    height: 0.75rem;
+    border-radius: 999px;
+  }
+
+  /* ============================================================
+     SCROLLABLE REGIONS
+     ============================================================ */
+
+  .scroll-slim::-webkit-scrollbar { width: 4px; height: 4px; }
+  .scroll-slim::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 999px;
+  }
+
+  .scroll-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scroll-none::-webkit-scrollbar { display: none; }
+
+  /* ============================================================
+     BADGE
+     ============================================================ */
+
+  .badge-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+    border: 1px solid var(--color-primary-200);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  /* ============================================================
+     PROGRESS BAR
+     ============================================================ */
+
+  .progress-track {
+    position: relative;
+    overflow: hidden;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--color-line-soft);
+  }
+  .progress-track::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 25%;
+    border-radius: 999px;
+    background: var(--color-primary);
+    animation: progressSlide 1.3s var(--ease-glide) infinite;
+  }
+
+  /* ============================================================
+     ACCESSIBILITY
+     ============================================================ */
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .stagger-1, .stagger-2, .stagger-3,
+    .stagger-4, .stagger-5, .stagger-6 {
+      opacity: 1;
+    }
+  }
+
+  /* ============================================================
+     GLASS NAV
+     ============================================================ */
+
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+  }
+}

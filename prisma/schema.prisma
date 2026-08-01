@@ -1,0 +1,738 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Pooled (Supabase transaction pooler, :6543) — used by the app at runtime.
+  url       = env("DATABASE_URL")
+  // Unpooled (session pooler, :5432) — migrations cannot run over the
+  // transaction pooler, so the CLI needs its own connection.
+  directUrl = env("DIRECT_URL")
+}
+
+// Enums commented out for SQLite compatibility
+// enum Role {
+//   CANDIDATE
+//   RECRUITER
+//   ADMIN
+// }
+// 
+// enum JobStatus {
+//   PENDING
+//   APPROVED
+//   REJECTED
+//   CLOSED
+// }
+// 
+// enum ApplicationStatus {
+//   APPLIED
+//   SCREENING
+//   SHORTLISTED
+//   INTERVIEW
+//   OFFERED
+//   REJECTED
+//   HIRED
+// }
+// 
+// enum VerificationStatus {
+//   PENDING
+//   VERIFIED
+//   REJECTED
+// }
+// 
+// enum TicketStatus {
+//   OPEN
+//   IN_PROGRESS
+//   RESOLVED
+//   CLOSED
+// }
+// 
+// enum PaymentStatus {
+//   PENDING
+//   COMPLETED
+//   FAILED
+//   REFUNDED
+// }
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  password        String?
+  name            String
+  phone           String?
+  role            String    @default("CANDIDATE")
+  isActive        Boolean   @default(true)
+  isEmailVerified Boolean   @default(false)
+  emailVerifiedAt DateTime?
+  profileImage    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  candidate          Candidate?
+  recruiter          Recruiter?
+  supportTickets     SupportTicket[]
+  emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
+  notifications      Notification[]
+  messages           Message[]
+  blogPosts          BlogPost[]
+  activityLogs       ActivityLog[]
+
+  @@map("users")
+}
+
+/// Email OTP codes. `codeHash` is a SHA-256 digest — never store the raw code.
+model EmailVerification {
+  id         String    @id @default(cuid())
+  userId     String
+  email      String
+  codeHash   String
+  purpose    String    @default("SIGNUP") // SIGNUP | LOGIN_VERIFY | EMAIL_CHANGE
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+  @@map("email_verifications")
+}
+
+/// Password reset OTP codes. `codeHash` is a SHA-256 digest — never store the raw code.
+model PasswordReset {
+  id         String    @id @default(cuid())
+  userId     String
+  email      String
+  codeHash   String
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_resets")
+}
+
+model Candidate {
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  headline       String?
+  summary        String?
+  location       String?
+  experience     Int? // years
+  currentSalary  Float?
+  expectedSalary Float?
+  noticePeriod   Int? // days
+  profileScore   Int     @default(0)
+  isOpenToWork   Boolean @default(true)
+  linkedinUrl    String?
+  githubUrl      String?
+  portfolioUrl   String?
+
+  /// FRESHER | AUTOMOBILE | NON_AUTOMOBILE — drives which fields below apply.
+  candidateType     String?
+  isProfileComplete Boolean @default(false)
+
+  dateOfBirth        DateTime?
+  gender             String?
+  interestedRole     String?
+  currentCity        String?
+  /// JSON string array. SQLite has no native list type; parse before use.
+  preferredLocations String?
+  qualification      String?
+
+  // Fresher branch
+  passingYear    Int?
+  college        String?
+  internship     String?
+  certifications String?
+
+  // Both experienced branches
+  totalExperience    String?
+  currentCompany     String?
+  currentDesignation String?
+  noticePeriodBand   String?
+  /// JSON string array of OEM_BRANDS — AUTOMOBILE branch only.
+  brandExperience    String?
+  /// Previous sector — NON_AUTOMOBILE branch only.
+  industry           String?
+
+  resumeUrl       String?
+  resumeName      String?
+  drivingLicense  Boolean   @default(false)
+  ownVehicle      Boolean   @default(false)
+  /// JSON string array of LANGUAGES.
+  languages       String?
+  referralCode    String?
+  acceptedTermsAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumes        Resume[]
+  applications   Application[]
+  savedJobs      SavedJob[]
+  jobAlerts      JobAlert[]
+  skills         CandidateSkill[]
+  assessments    AssessmentResult[]
+  ratings        CandidateRating[]
+  verification   CandidateVerification?
+  education      Education[]
+  workExperience WorkExperience[]
+
+  @@map("candidates")
+}
+
+model Education {
+  id          String   @id @default(cuid())
+  candidateId String
+  degree      String
+  institution String
+  field       String?
+  startYear   Int
+  endYear     Int?
+  grade       String?
+  createdAt   DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("education")
+}
+
+model WorkExperience {
+  id          String    @id @default(cuid())
+  candidateId String
+  title       String
+  company     String
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  description String?
+  createdAt   DateTime  @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("work_experience")
+}
+
+model Recruiter {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  companyId   String?
+  designation String?
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company      Company?               @relation(fields: [companyId], references: [id])
+  jobs         Job[]
+  verification RecruiterVerification?
+
+  @@map("recruiters")
+}
+
+model Company {
+  id                String   @id @default(cuid())
+  name              String
+  /// URL-safe identifier used by /company/[slug].
+  slug              String?  @unique
+  logo              String?
+  website           String?
+  industry          String?
+  size              String?
+  description       String?
+  headquarters      String?
+  foundedYear       Int?
+  linkedinUrl       String?
+  /// 15-character Indian GSTIN, uppercase.
+  gstNumber         String?
+  addressLine       String?
+  city              String?
+  state             String?
+  pincode           String?
+  phone             String?
+  /// Public recruitment inbox — distinct from the recruiter's login email.
+  email             String?
+  isProfileComplete Boolean  @default(false)
+  isVerified        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  recruiters    Recruiter[]
+  jobs          Job[]
+  documents     CompanyDocument[]
+  subscriptions Subscription[]
+
+  @@map("companies")
+}
+
+model CompanyDocument {
+  id         String    @id @default(cuid())
+  companyId  String
+  /// GST_CERTIFICATE | INCORPORATION | PAN | ADDRESS_PROOF | OTHER
+  type       String
+  fileUrl    String
+  fileName   String?
+  /// PENDING | APPROVED | REJECTED
+  status     String    @default("PENDING")
+  adminNotes String?
+  uploadedAt DateTime  @default(now())
+  reviewedAt DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("company_documents")
+}
+
+model Job {
+  id               String    @id @default(cuid())
+  recruiterId      String
+  companyId        String?
+  title            String
+  description      String
+  requirements     String?
+  responsibilities String?
+  skills           String    @default("[]")
+  category         String? // automotive category id, see src/lib/automotive.ts
+  jobType          String // Full-time, Part-time, Contract, Apprenticeship, Internship
+  workMode         String // On-site, Field, Hybrid
+  location         String?
+  minSalary        Float?
+  maxSalary        Float?
+  currency         String    @default("INR")
+  experience       String?
+  education        String?
+  status           String    @default("PENDING")
+  openings         Int       @default(1)
+  deadline         DateTime?
+  views            Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  recruiter    Recruiter     @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  company      Company?      @relation(fields: [companyId], references: [id])
+  applications Application[]
+  savedJobs    SavedJob[]
+  jobAlerts    JobAlert[]
+
+  @@map("jobs")
+}
+
+model Application {
+  id             String   @id @default(cuid())
+  jobId          String
+  candidateId    String
+  resumeId       String?
+  coverLetter    String?
+  status         String   @default("APPLIED")
+  stage          String   @default("Applied")
+  aiScore        Float?
+  aiNotes        String?
+  recruiterNotes String?
+  appliedAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  job          Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidate    Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  resume       Resume?       @relation(fields: [resumeId], references: [id])
+  conversation Conversation?
+
+  @@unique([jobId, candidateId])
+  @@map("applications")
+}
+
+model Resume {
+  id            String   @id @default(cuid())
+  candidateId   String
+  title         String   @default("My Resume")
+  fileUrl       String?
+  fileType      String?
+  isAIGenerated Boolean  @default(false)
+  content       String? // AI-generated structured content
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  candidate    Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  applications Application[]
+
+  @@map("resumes")
+}
+
+model Skill {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  category  String?
+  createdAt DateTime @default(now())
+
+  candidates CandidateSkill[]
+
+  @@map("skills")
+}
+
+model CandidateSkill {
+  id          String  @id @default(cuid())
+  candidateId String
+  skillId     String
+  level       String? // Beginner, Intermediate, Expert
+  yearsExp    Int?
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  skill     Skill     @relation(fields: [skillId], references: [id])
+
+  @@unique([candidateId, skillId])
+  @@map("candidate_skills")
+}
+
+model Assessment {
+  id           String   @id @default(cuid())
+  title        String
+  category     String
+  description  String?
+  questions    String // Array of questions
+  duration     Int // minutes
+  passingScore Int      @default(70)
+  createdAt    DateTime @default(now())
+
+  results AssessmentResult[]
+
+  @@map("assessments")
+}
+
+model AssessmentResult {
+  id           String   @id @default(cuid())
+  candidateId  String
+  assessmentId String
+  score        Int
+  isPassed     Boolean
+  answers      String?
+  completedAt  DateTime @default(now())
+
+  candidate  Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [id])
+
+  @@map("assessment_results")
+}
+
+model JobAlert {
+  id          String   @id @default(cuid())
+  candidateId String
+  jobId       String?
+  keywords    String   @default("[]")
+  location    String?
+  jobType     String?
+  minSalary   Float?
+  frequency   String   @default("daily") // daily, weekly
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job       Job?      @relation(fields: [jobId], references: [id])
+
+  @@map("job_alerts")
+}
+
+model SavedJob {
+  id          String   @id @default(cuid())
+  candidateId String
+  jobId       String
+  savedAt     DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, jobId])
+  @@map("saved_jobs")
+}
+
+model CandidateRating {
+  id          String   @id @default(cuid())
+  candidateId String
+  recruiterId String
+  jobId       String?
+  rating      Int // 1-5
+  notes       String?
+  tags        String   @default("[]")
+  createdAt   DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_ratings")
+}
+
+model SupportTicket {
+  id          String    @id @default(cuid())
+  userId      String
+  subject     String
+  description String
+  status      String    @default("OPEN")
+  priority    String    @default("MEDIUM")
+  category    String?
+  adminNotes  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("support_tickets")
+}
+
+model Payment {
+  id             String    @id @default(cuid())
+  userId         String
+  subscriptionId String?
+  amount         Float
+  currency       String    @default("INR")
+  plan           String // basic, professional, enterprise
+  status         String    @default("PENDING")
+  transactionId  String?
+  paymentMethod  String?
+  description    String?
+  paidAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([subscriptionId])
+  @@map("payments")
+}
+
+model RecruiterVerification {
+  id            String    @id @default(cuid())
+  recruiterId   String    @unique
+  companyRegDoc String?
+  idProof       String?
+  status        String    @default("PENDING")
+  adminNotes    String?
+  submittedAt   DateTime  @default(now())
+  reviewedAt    DateTime?
+
+  recruiter Recruiter @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+
+  @@map("recruiter_verification")
+}
+
+model CandidateVerification {
+  id          String    @id @default(cuid())
+  candidateId String    @unique
+  idProof     String?
+  status      String    @default("PENDING")
+  adminNotes  String?
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_verification")
+}
+
+/// In-app notifications. Delivery to email/WhatsApp is a separate concern —
+/// this table records what the user should see, and `channels` tracks where a
+/// copy was already sent so a retry cannot double-send.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  /// APPLICATION_STATUS | NEW_APPLICANT | JOB_APPROVED | JOB_REJECTED |
+  /// DOCUMENT_REVIEWED | SUBSCRIPTION | MESSAGE | SYSTEM
+  type      String
+  title     String
+  body      String?
+  /// Where clicking the notification should land the user.
+  link      String?
+  /// JSON array of delivered channels, e.g. ["EMAIL"].
+  channels  String    @default("[]")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+/// A recruiter/candidate conversation, always anchored to an application so
+/// neither side can cold-message the other.
+model Conversation {
+  id            String   @id @default(cuid())
+  applicationId String   @unique
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  messages    Message[]
+
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String
+  /// JSON array of {url, name} objects.
+  attachments    String    @default("[]")
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+/// Plan catalogue. Prices are stored in paise to avoid float rounding on money.
+model Plan {
+  id              String   @id @default(cuid())
+  /// STARTER | GROWTH | ENTERPRISE
+  code            String   @unique
+  name            String
+  description     String?
+  pricePaise      Int      @default(0)
+  /// MONTHLY | YEARLY | LIFETIME
+  interval        String   @default("MONTHLY")
+  jobPostLimit    Int?
+  resumeViewLimit Int?
+  /// JSON array of feature strings shown on /pricing.
+  features        String   @default("[]")
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+/// A company's plan. Usage counters live here rather than being derived from
+/// job counts, so a plan change or renewal resets the quota cleanly.
+model Subscription {
+  id               String    @id @default(cuid())
+  companyId        String
+  planId           String
+  /// ACTIVE | PAST_DUE | CANCELLED | EXPIRED
+  status           String    @default("ACTIVE")
+  jobPostsUsed     Int       @default(0)
+  resumeViewsUsed  Int       @default(0)
+  startedAt        DateTime  @default(now())
+  currentPeriodEnd DateTime?
+  cancelledAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id])
+  payments Payment[]
+
+  @@index([companyId, status])
+  @@map("subscriptions")
+}
+
+/// Author-managed blog posts. `src/lib/blog.ts` still serves the public pages;
+/// this table backs the admin editor and takes over once posts exist here.
+model BlogPost {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String?
+  /// Markdown-ish body: `## ` lines are headings, blank-line separated.
+  body        String
+  category    String?
+  coverImage  String?
+  authorId    String?
+  /// DRAFT | PUBLISHED
+  status      String    @default("DRAFT")
+  readMinutes Int       @default(5)
+  views       Int       @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([status, publishedAt])
+  @@map("blogs")
+}
+
+/// Audit trail for privileged actions. Append-only: rows are never updated, so
+/// a reviewer can always reconstruct who changed what.
+model ActivityLog {
+  id         String   @id @default(cuid())
+  /// Null for anonymous or system-initiated actions.
+  actorId    String?
+  /// e.g. DOCUMENT_APPROVED, JOB_REJECTED, USER_SUSPENDED
+  action     String
+  /// Table name the action targeted, e.g. "companies".
+  entityType String?
+  entityId   String?
+  /// JSON blob of the relevant before/after fields.
+  metadata   String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@map("activity_logs")
+}
+
+/// Named role definitions backing the permission matrix. `User.role` stays the
+/// fast path for the three built-in roles; this table exists so an admin can be
+/// granted a narrower set later without a migration.
+model Role {
+  id          String   @id @default(cuid())
+  /// CANDIDATE | RECRUITER | ADMIN | custom slug
+  name        String   @unique
+  label       String
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id        String   @id @default(cuid())
+  /// resource:action, e.g. "job:approve"
+  key       String   @unique
+  label     String
+  /// Grouping for the admin UI, e.g. "Jobs".
+  category  String?
+  createdAt DateTime @default(now())
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
