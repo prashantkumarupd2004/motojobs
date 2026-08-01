@@ -1,0 +1,91 @@
+name: Deploy to App Runner
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: motojobs
+  SERVICE_NAME: motojobs
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::298713973792:role/motojobs-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          IMAGE="$REGISTRY/$ECR_REPOSITORY:${{ github.sha }}"
+          # NEXT_PUBLIC_* must be build args: Next inlines them into the client
+          # bundle at build time, so setting them at runtime has no effect.
+          docker build \
+            --build-arg NEXT_PUBLIC_APP_URL=https://motojobs.in \
+            --build-arg NEXT_PUBLIC_APP_NAME=Motojobs.in \
+            -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Deploy to App Runner
+        run: |
+          SERVICE_ARN=$(aws apprunner list-services --region "$AWS_REGION" \
+            --query "ServiceSummaryList[?ServiceName=='$SERVICE_NAME'].ServiceArn" \
+            --output text)
+          if [ -z "$SERVICE_ARN" ]; then
+            echo "::error::App Runner service '$SERVICE_NAME' not found. Create it once before the first deploy."
+            exit 1
+          fi
+
+          cat > /tmp/source-config.json <<EOF
+          {
+            "ImageRepository": {
+              "ImageIdentifier": "$IMAGE",
+              "ImageRepositoryType": "ECR",
+              "ImageConfiguration": { "Port": "3000" }
+            },
+            "AuthenticationConfiguration": {
+              "AccessRoleArn": "arn:aws:iam::298713973792:role/motojobs-apprunner-ecr-access"
+            },
+            "AutoDeploymentsEnabled": false
+          }
+          EOF
+
+          aws apprunner update-service --region "$AWS_REGION" \
+            --service-arn "$SERVICE_ARN" \
+            --source-configuration file:///tmp/source-config.json
+
+          # There is no `aws apprunner wait`, so poll DescribeService ourselves.
+          # OPERATION_IN_PROGRESS means the rollout is still running.
+          for _ in $(seq 1 60); do
+            sleep 20
+            STATUS=$(aws apprunner describe-service --region "$AWS_REGION" \
+              --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text)
+            echo "status: $STATUS"
+            case "$STATUS" in
+              RUNNING) echo "deployed"; exit 0 ;;
+              OPERATION_IN_PROGRESS) ;;
+              *) echo "::error::Deployment ended in state $STATUS"; exit 1 ;;
+            esac
+          done
+          echo "::error::Timed out waiting for deployment"
+          exit 1

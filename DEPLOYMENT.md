@@ -261,23 +261,38 @@ Files are served through `/api/files/[...key]`, which authenticates the caller a
 
 ## Part 4 — App Runner
 
-### 4.1 Push the code to a git repo
+### 4.1 Build pipeline: GitHub Actions → ECR → App Runner
 
-App Runner deploys from GitHub. **This project is not currently a git repository.**
+**App Runner's GitHub source cannot build a Dockerfile.** Connecting a repo directly
+only offers *managed runtimes* (`NODEJS_22`, `PYTHON_311`, …) — the API's `Runtime`
+enum has no `DOCKER` value. Docker images reach App Runner only through **ECR**.
 
+So the pipeline is: GitHub Actions builds the image, pushes it to ECR, then calls
+`update-service`. `.github/workflows/deploy.yml` does all three on every push to
+`main`. There is no `apprunner.yaml` — that file is only read by GitHub-source
+builds, which this service does not use.
+
+Code lives at `github.com/prashantkumarupd2004/motojobs`, branch `main`.
+`.gitignore` excludes `.env*`, `prisma/dev.db`, and `public/uploads/`. **Verify
+before pushing:**
 ```bash
-cd /path/to/job-portal
-git init
-git add .
-git commit -m "Production setup: SES, Supabase, S3, App Runner"
-git remote add origin git@github.com:YOURORG/job-portal.git
-git push -u origin main
+git status --short          # no .env / dev.db / uploads listed?
+git log --stat -1           # nothing unexpected?
 ```
 
-`.gitignore` already excludes `.env*`, so secrets stay out. **Verify before pushing:**
+Actions authenticates via **GitHub OIDC** — no long-lived AWS keys in repo secrets.
+This needs an IAM OIDC provider for `token.actions.githubusercontent.com` plus a role
+`motojobs-github-actions` whose trust policy restricts `sub` to
+`repo:prashantkumarupd2004/motojobs:ref:refs/heads/main`. **Scope that `sub`
+condition to the repo and branch** — a wildcard there lets any GitHub repository
+anywhere assume the role.
+
+Migrations are *not* run from the workflow: that would mean putting the Supabase
+password into GitHub secrets as well as Secrets Manager, doubling the places it can
+leak. Run them from your machine before deploying:
+
 ```bash
-git status --short          # no .env files listed?
-git log --stat -1           # nothing unexpected?
+npx prisma migrate deploy
 ```
 
 ### 4.2 IAM instance role
@@ -309,11 +324,13 @@ Create role `motojobs-apprunner-instance`, trusted by `tasks.apprunner.amazonaws
 
 ### 4.3 Create the service
 
-App Runner Console → *Create service* → **Source: GitHub** → connect repo, branch `main`, **Deployment trigger: Automatic**
+App Runner Console → *Create service* → **Source: Container registry** → ECR repository `motojobs`, tag pushed by the workflow
 
-- Configuration file: **Use a configuration file** (`apprunner.yaml` is in the repo)
-- Instance role: `motojobs-apprunner-instance`
+- ECR access role: `motojobs-apprunner-ecr-access` (lets App Runner pull the image)
+- Instance role: `motojobs-apprunner-instance` (lets the app call SES/S3/Secrets Manager)
+- Port: `3000`
 - Health check path: `/`
+- Deployment trigger: **Manual** — the workflow calls `update-service` itself
 - **Networking: leave as Public access (default egress).** Do **not** attach a VPC
   connector. Supabase is a public endpoint, so there is nothing to reach privately —
   and attaching a connector routes all outbound traffic through your VPC route table,
@@ -355,7 +372,7 @@ openssl rand -base64 48
 
 ⚠️ Changing `JWT_SECRET` invalidates all existing sessions — fine at launch, but never rotate it casually later.
 
-Also note `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_APP_NAME` must additionally be set as **build-time** variables, because Next.js inlines `NEXT_PUBLIC_*` into the client bundle at build. `apprunner.yaml` passes them through as Docker build args.
+Also note `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_APP_NAME` are **build-time** values, because Next.js inlines `NEXT_PUBLIC_*` into the client bundle at build. Setting them here only affects the server; the workflow passes them to `docker build` as `--build-arg`. To change either one you must rebuild the image, not just edit the service config.
 
 ### 4.5 Custom domain
 
