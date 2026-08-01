@@ -3,6 +3,10 @@
 
 generator client {
   provider = "prisma-client-js"
+  // The container runs on Alpine (musl) with OpenSSL 3.x. Prisma's autodetect
+  // guesses openssl-1.1.x there and emits an engine that cannot load, so the
+  // target is pinned. "native" keeps local dev working.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {

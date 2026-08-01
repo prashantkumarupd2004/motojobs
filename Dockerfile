@@ -3,6 +3,8 @@
 # ---- deps ----------------------------------------------------------------
 FROM public.ecr.aws/docker/library/node:22-alpine AS deps
 WORKDIR /app
+# Prisma's engine links against libssl; without it the loader fails at runtime.
+RUN apk add --no-cache openssl
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 # `npm ci` runs prisma's postinstall, which needs schema.prisma present above.
@@ -11,6 +13,7 @@ RUN npm ci
 # ---- builder -------------------------------------------------------------
 FROM public.ecr.aws/docker/library/node:22-alpine AS builder
 WORKDIR /app
+RUN apk add --no-cache openssl
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -27,6 +30,7 @@ RUN npx prisma generate && npm run build
 # ---- runner --------------------------------------------------------------
 FROM public.ecr.aws/docker/library/node:22-alpine AS runner
 WORKDIR /app
+RUN apk add --no-cache openssl
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
