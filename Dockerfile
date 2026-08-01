@@ -35,7 +35,6 @@ RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
@@ -54,4 +53,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin ./node_modules/
 USER nextjs
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+# App Runner injects HOSTNAME with the instance's internal hostname, which
+# Next's standalone server binds to instead of all interfaces — the health check
+# then never reaches the port. Clearing it in the command wins over the
+# platform's env, unlike an ENV line.
+CMD ["sh", "-c", "HOSTNAME=0.0.0.0 exec node server.js"]
