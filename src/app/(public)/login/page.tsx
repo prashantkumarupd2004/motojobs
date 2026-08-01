@@ -2,8 +2,10 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import AuthShell from '@/components/auth/AuthShell';
+import Field from '@/components/auth/Field';
+import SubmitButton from '@/components/auth/SubmitButton';
 
 function dashboardFor(role?: string) {
   if (role === 'RECRUITER') return '/recruiter/dashboard';
@@ -18,7 +20,6 @@ function LoginForm() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -53,109 +54,76 @@ function LoginForm() {
 
   return (
     <>
-      <h1 className="text-[32px] font-extrabold text-ink mb-3 tracking-[-0.038em] leading-[1.15]">
+      <h1 className="text-[29px] sm:text-[32px] font-extrabold text-ink tracking-[-0.038em] leading-[1.12]">
         Log in
       </h1>
-      <p className="text-ink-muted text-[15px] leading-[1.65] mb-8">
+      <p className="mt-2.5 text-ink-muted text-[14.5px] leading-[1.65]">
         Welcome back. Sign in to continue your automobile career journey.
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-5">
-          <label
-            htmlFor="email"
-            className="block text-[13px] font-semibold text-ink-soft mb-2 tracking-[-0.01em]"
-          >
-            Email address
-          </label>
-          <div className="relative flex items-center group">
-            <Mail className="absolute left-4 w-[18px] h-[18px] text-ink-faint pointer-events-none transition-colors duration-300 group-focus-within:text-brand-600" />
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full bg-white text-ink placeholder-ink-faint text-sm rounded-[14px] pl-11 pr-4 py-3 border border-line outline-none shadow-[inset_0_1px_2px_rgba(16,24,40,0.04)] transition-all duration-300 hover:border-[#D9DEE9] focus:border-brand-600 focus:shadow-[0_0_0_4px_rgba(15,76,129,0.10)]"
-            />
-          </div>
-        </div>
+      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+        <Field
+          id="email"
+          label="Email address"
+          type="email"
+          icon={Mail}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          autoComplete="email"
+        />
 
-        <div className="mb-3">
-          <div className="flex items-center justify-between mb-2">
-            <label
-              htmlFor="password"
-              className="text-[13px] font-semibold text-ink-soft tracking-[-0.01em]"
-            >
-              Password
-            </label>
+        <Field
+          id="password"
+          label="Password"
+          type="password"
+          icon={Lock}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+          autoComplete="current-password"
+          action={
             <Link
               href="/forgot-password"
-              className="text-[12.5px] font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+              className="text-[12px] font-semibold text-brand-600 hover:text-brand-700 transition-colors"
             >
               Forgot password?
             </Link>
-          </div>
-          <div className="relative flex items-center group">
-            <Lock className="absolute left-4 w-[18px] h-[18px] text-ink-faint pointer-events-none transition-colors duration-300 group-focus-within:text-brand-600" />
-            <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-white text-ink placeholder-ink-faint text-sm rounded-[14px] pl-11 pr-11 py-3 border border-line outline-none shadow-[inset_0_1px_2px_rgba(16,24,40,0.04)] transition-all duration-300 hover:border-[#D9DEE9] focus:border-brand-600 focus:shadow-[0_0_0_4px_rgba(15,76,129,0.10)]"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((s) => !s)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-4 text-ink-faint hover:text-brand-600 transition-colors"
-            >
-              {showPassword ? (
-                <EyeOff className="w-[18px] h-[18px]" />
-              ) : (
-                <Eye className="w-[18px] h-[18px]" />
-              )}
-            </button>
-          </div>
-        </div>
+          }
+        />
 
         {error && (
-          <p className="mt-4 text-[13.5px] font-medium text-critical animate-fade-in" role="alert">
-            {error}
-          </p>
+          <div
+            className="flex items-start gap-2.5 rounded-[13px] bg-critical-soft border border-critical/20 px-3.5 py-3 animate-fade-in"
+            role="alert"
+          >
+            <AlertCircle className="w-[17px] h-[17px] text-critical shrink-0 mt-px" />
+            <p className="text-[13px] font-medium text-critical leading-snug">{error}</p>
+          </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading || !email || !password}
-          className="w-full mt-6 grad-brand text-white font-semibold text-[15px] rounded-[14px] py-3.5 shadow-brand transition-all duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-e4 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 flex items-center justify-center gap-2"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-[18px] h-[18px] animate-spin" />
-              Signing in…
-            </>
-          ) : (
-            <>
-              Log in
-              <ArrowRight className="w-[18px] h-[18px]" />
-            </>
-          )}
-        </button>
+        <div className="pt-1">
+          <SubmitButton
+            loading={loading}
+            disabled={!email || !password}
+            loadingLabel="Signing in…"
+          >
+            Log in
+          </SubmitButton>
+        </div>
       </form>
 
-      <p className="mt-8 text-center text-[13.5px] text-ink-muted">
-        New to MotoJobs?{' '}
-        <Link href="/register" className="font-semibold text-brand-600 hover:text-brand-700">
-          Create an account
-        </Link>
-      </p>
+      <div className="mt-8 pt-7 border-t border-line-soft">
+        <p className="text-center text-[13.5px] text-ink-muted">
+          New to MotoJobs?{' '}
+          <Link
+            href="/register"
+            className="font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+          >
+            Create an account
+          </Link>
+        </p>
+      </div>
     </>
   );
 }
