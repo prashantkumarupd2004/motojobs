@@ -1,10 +1,16 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "",
-});
+// Constructed on first call, not at module load: `next build` collects page data
+// by importing every route, and the SDK throws when OPENAI_API_KEY is absent —
+// which it always is inside the container build.
+let client: OpenAI | undefined;
 
-export default openai;
+function openai() {
+  if (!client) {
+    client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return client;
+}
 
 /**
  * Injected as a system message on every call. Without it the model defaults to
@@ -24,7 +30,7 @@ Ground every answer in Indian auto retail reality:
 Never suggest programming languages, frameworks, IT tools or software-engineering practices.`;
 
 async function completeJSON(prompt: string, maxTokens: number) {
-  const response = await openai.chat.completions.create({
+  const response = await openai().chat.completions.create({
     model: "gpt-4o",
     messages: [
       { role: "system", content: AUTOMOTIVE_CONTEXT },
@@ -192,7 +198,7 @@ User context: ${JSON.stringify(userContext)}
 
 Be encouraging, specific, and actionable. Keep responses concise but valuable.`;
 
-  const response = await openai.chat.completions.create({
+  const response = await openai().chat.completions.create({
     model: "gpt-4o",
     messages: [
       { role: "system", content: systemPrompt },

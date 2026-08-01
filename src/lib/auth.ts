@@ -2,13 +2,22 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 
-if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error("JWT_SECRET must be set in production");
-}
+// Resolved on first use, not at module load: `next build` runs with
+// NODE_ENV=production but without runtime secrets, so throwing at import time
+// would fail the container build.
+let secret: Uint8Array | undefined;
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "fallback-secret-key-for-dev-only-change-prod"
-);
+function getSecret() {
+  if (!secret) {
+    if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+      throw new Error("JWT_SECRET must be set in production");
+    }
+    secret = new TextEncoder().encode(
+      process.env.JWT_SECRET || "fallback-secret-key-for-dev-only-change-prod"
+    );
+  }
+  return secret;
+}
 
 export interface JWTPayload {
   userId: string;
@@ -23,12 +32,12 @@ export async function signJWT(payload: Omit<JWTPayload, "iat" | "exp">) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(secret);
+    .sign(getSecret());
 }
 
 export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload as unknown as JWTPayload;
   } catch {
     return null;
