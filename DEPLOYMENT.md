@@ -282,10 +282,32 @@ git log --stat -1           # nothing unexpected?
 
 Actions authenticates via **GitHub OIDC** — no long-lived AWS keys in repo secrets.
 This needs an IAM OIDC provider for `token.actions.githubusercontent.com` plus a role
-`motojobs-github-actions` whose trust policy restricts `sub` to
-`repo:prashantkumarupd2004/motojobs:ref:refs/heads/main`. **Scope that `sub`
-condition to the repo and branch** — a wildcard there lets any GitHub repository
-anywhere assume the role.
+`motojobs-github-actions`.
+
+**Pin the trust policy on the immutable numeric IDs, not the repo name.** GitHub now
+issues *immutable subject claims* for new repositories: the `sub` is
+`repo:owner@<ownerId>/repo@<repoId>:ref:refs/heads/main`, not
+`repo:owner/repo:ref:refs/heads/main`. A trust policy written the old way fails with
+`Not authorized to perform sts:AssumeRoleWithWebIdentity`, and the GitHub Actions log
+shows only that generic message — the actual claim is visible in CloudTrail under
+`userIdentity.principalId`. This repo's IDs: owner `269799554`, repo `1319340940`.
+
+```json
+"Condition": {
+  "StringEquals": {
+    "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+    "token.actions.githubusercontent.com:repository_owner_id": "269799554",
+    "token.actions.githubusercontent.com:repository_id": "1319340940"
+  },
+  "StringLike": {
+    "token.actions.githubusercontent.com:sub": "repo:*:ref:refs/heads/main"
+  }
+}
+```
+
+The ID conditions are what scope this to your repository; the `sub` wildcard only
+restricts the branch. Do not drop the ID conditions and leave the wildcard alone — on
+its own it would let any repository on GitHub assume the role.
 
 Migrations are *not* run from the workflow: that would mean putting the Supabase
 password into GitHub secrets as well as Secrets Manager, doubling the places it can
