@@ -13,14 +13,16 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await props.params;
   const post = getPost(slug);
-  if (!post) return { title: 'Post not found — Motojobs.in' };
+  if (!post) return { title: 'Post not found' };
 
   return {
-    title: `${post.title} — Motojobs.in`,
+    title: post.title,
     description: post.excerpt,
+    alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
       title: post.title,
       description: post.excerpt,
+      url: `/blog/${post.slug}`,
       type: 'article',
       publishedTime: post.publishedAt,
     },

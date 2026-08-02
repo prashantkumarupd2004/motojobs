@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import LegalPage, { type LegalSection } from '@/components/legal/LegalPage';
 
 export const metadata: Metadata = {
-  title: 'Terms & Conditions — Motojobs.in',
+  title: 'Terms & Conditions',
   description:
     'The terms governing use of Motojobs.in by candidates and employers, including account rules, job posting standards and liability.',
+  alternates: { canonical: '/terms' },
 };
 
 const SECTIONS: LegalSection[] = [

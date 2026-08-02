@@ -4,9 +4,16 @@ import { Clock, PenLine } from 'lucide-react';
 import { BLOG_POSTS, formatPostDate } from '@/lib/blog';
 
 export const metadata: Metadata = {
-  title: 'Automobile Career Advice & Hiring Insights — Motojobs.in Blog',
+  title: 'Automobile Career Advice & Hiring Insights',
   description:
     'Interview prep, resume tips, EV skills and hiring guides for the Indian automobile industry — written for technicians, service advisors, sales consultants and the people who hire them.',
+  alternates: { canonical: '/blog' },
+  openGraph: {
+    title: 'Automobile Career Advice & Hiring Insights',
+    description:
+      'Interview prep, resume tips, EV skills and hiring guides for the Indian automobile industry.',
+    url: '/blog',
+  },
 };
 
 export default function BlogPage() {

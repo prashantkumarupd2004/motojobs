@@ -36,6 +36,8 @@ const publicPaths = [
   "/api/contact",
   "/_next",
   "/favicon.ico",
+  "/robots.txt",
+  "/sitemap.xml",
   "/uploads",
 ];
 

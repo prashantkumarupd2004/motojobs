@@ -4,9 +4,16 @@ import { Check, Sparkles } from 'lucide-react';
 import { BILLING_ENABLED } from '@/lib/subscription';
 
 export const metadata: Metadata = {
-  title: 'Pricing for Employers — Motojobs.in',
+  title: 'Pricing for Employers',
   description:
     'Simple hiring plans for dealerships, workshops, OEMs and EV companies. Free for job seekers, always. Pay only for the roles you post.',
+  alternates: { canonical: '/pricing' },
+  openGraph: {
+    title: 'Pricing for Employers',
+    description:
+      'Simple hiring plans for dealerships, workshops, OEMs and EV companies. Free for job seekers, always.',
+    url: '/pricing',
+  },
 };
 
 type Plan = {

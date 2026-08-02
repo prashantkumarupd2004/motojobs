@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import LegalPage, { type LegalSection } from '@/components/legal/LegalPage';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Motojobs.in',
+  title: 'Privacy Policy',
   description:
     'How Motojobs.in collects, uses, shares and protects your personal data, including resumes, and the rights you have over it.',
+  alternates: { canonical: '/privacy' },
 };
 
 const SECTIONS: LegalSection[] = [

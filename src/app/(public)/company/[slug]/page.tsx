@@ -49,14 +49,23 @@ export async function generateMetadata(
     select: { name: true, description: true, city: true, state: true },
   });
 
-  if (!company) return { title: 'Company not found — Motojobs.in' };
+  if (!company) return { title: 'Company not found' };
 
   const where = [company.city, company.state].filter(Boolean).join(', ');
+  const description =
+    company.description?.slice(0, 155) ??
+    `Open automobile roles at ${company.name}${where ? ` in ${where}` : ''}.`;
+
   return {
-    title: `${company.name} — Jobs & Company Profile | Motojobs.in`,
-    description:
-      company.description?.slice(0, 155) ??
-      `Open automobile roles at ${company.name}${where ? ` in ${where}` : ''}.`,
+    title: `${company.name} — Jobs & Company Profile`,
+    description,
+    alternates: { canonical: `/company/${slug}` },
+    openGraph: {
+      title: `${company.name} — Jobs & Company Profile`,
+      description,
+      url: `/company/${slug}`,
+      type: 'profile',
+    },
   };
 }
 
