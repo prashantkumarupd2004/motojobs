@@ -1,5 +1,6 @@
+import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Check, ShieldCheck, Wrench } from 'lucide-react';
+import { ArrowLeft, Check, ShieldCheck } from 'lucide-react';
 
 interface AuthShellProps {
   eyebrow?: string;
@@ -41,13 +42,18 @@ export default function AuthShell({
         <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-white/25 to-transparent" />
 
         <div className="relative flex items-center justify-between">
-          <Link href="/" className="group flex items-center gap-3">
-            <span className="relative w-11 h-11 rounded-[14px] bg-white/[0.13] border border-white/25 backdrop-blur-sm flex items-center justify-center shadow-[0_8px_22px_rgba(6,31,54,0.35)] transition-transform duration-500 [transition-timing-function:var(--ease-premium)] group-hover:scale-105">
-              <Wrench className="w-5 h-5 text-white" strokeWidth={2.2} />
-              <span className="absolute inset-x-2.5 top-px h-px bg-white/55 rounded-full" />
-            </span>
-            <span className="text-[15px] font-bold text-white tracking-[-0.02em]">
-              {eyebrow}
+          <Link href="/" aria-label={`${eyebrow} home`} className="group">
+            {/* The logo artwork is a JPEG on white, so it needs its own light
+                card to sit on the dark panel without a grey box around it. */}
+            <span className="block rounded-[14px] bg-white px-5 py-3 shadow-[0_8px_22px_rgba(6,31,54,0.35)] transition-transform duration-500 [transition-timing-function:var(--ease-premium)] group-hover:scale-[1.03]">
+              <Image
+                src="/logo-wordmark.png"
+                alt={eyebrow}
+                width={1346}
+                height={233}
+                preload
+                className="h-7 w-auto"
+              />
             </span>
           </Link>
           <Link
@@ -64,12 +70,24 @@ export default function AuthShell({
             <ShieldCheck className="w-3.5 h-3.5" />
             India&apos;s automobile job network
           </span>
-          <h2 className="mt-7 text-[42px] xl:text-[50px] font-extrabold text-white leading-[1.05] tracking-[-0.04em]">
+          <h2 className="mt-7 text-[38px] xl:text-[46px] font-extrabold text-white leading-[1.05] tracking-[-0.04em]">
             {title}
           </h2>
-          <p className="mt-5 text-white/70 text-[16.5px] leading-[1.7]">{subtitle}</p>
+          <p className="mt-4 text-white/70 text-[16px] leading-[1.65]">{subtitle}</p>
 
-          <ul className="mt-10 space-y-3">
+          <div className="mt-8 relative aspect-[16/10] rounded-[20px] overflow-hidden ring-1 ring-white/20 shadow-[0_24px_60px_rgba(6,31,54,0.45)]">
+            <Image
+              src="/hero-professionals.png"
+              alt="Service advisors, technicians and sales staff hired through MotoJobs.in"
+              fill
+              sizes="(min-width: 1024px) 28rem, 100vw"
+              className="object-cover object-top"
+            />
+            {/* Bottom fade ties the photo into the panel instead of ending flat. */}
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-950/55 via-transparent to-transparent" />
+          </div>
+
+          <ul className="mt-8 space-y-3">
             {bullets.map((f) => (
               <li key={f} className="flex items-start gap-3 text-white/85 text-[14.5px] font-medium">
                 <span className="mt-0.5 w-5 h-5 rounded-full bg-ignite-500/25 border border-ignite-400/40 flex items-center justify-center shrink-0">
@@ -102,15 +120,17 @@ export default function AuthShell({
         <div className="relative w-full max-w-[440px] animate-fade-in">
           <Link
             href="/"
-            className="lg:hidden inline-flex items-center gap-2.5 mb-8 group"
+            className="lg:hidden inline-block mb-8"
             aria-label="MotoJobs.in home"
           >
-            <span className="w-10 h-10 rounded-[13px] grad-brand flex items-center justify-center shadow-brand">
-              <Wrench className="w-[18px] h-[18px] text-white" strokeWidth={2.2} />
-            </span>
-            <span className="text-[15px] font-bold text-ink tracking-[-0.02em]">
-              MotoJobs.in
-            </span>
+            <Image
+              src="/logo-wordmark.png"
+              alt="MotoJobs.in"
+              width={1346}
+              height={233}
+              preload
+              className="h-8 w-auto"
+            />
           </Link>
 
           <div className="sm:bg-surface sm:border sm:border-line sm:rounded-[24px] sm:shadow-e3 sm:p-8 lg:p-9">

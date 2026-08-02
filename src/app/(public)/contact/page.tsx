@@ -14,9 +14,24 @@ const SUBJECTS = [
 ];
 
 const CHANNELS = [
-  { Icon: Mail, label: 'Email', value: 'hello@motojobs.in', href: 'mailto:hello@motojobs.in' },
-  { Icon: Phone, label: 'Phone', value: '+91 90000 00000', href: 'tel:+919000000000' },
-  { Icon: MapPin, label: 'Office', value: 'Pune, Maharashtra', href: null },
+  {
+    Icon: Mail,
+    label: 'Email',
+    value: 'support@motojobs.in',
+    href: 'mailto:support@motojobs.in',
+  },
+  {
+    Icon: Phone,
+    label: 'Phone',
+    value: '+91 82002 18733',
+    href: 'tel:+918200218733',
+  },
+  {
+    Icon: MapPin,
+    label: 'Office',
+    value: 'Samrudhi Satvik Society, Dhanteshwar, Vadodara, Gujarat 390004',
+    href: 'https://maps.google.com/?q=Samrudhi+Satvik+Society+Dhanteshwar+Vadodara+390004',
+  },
 ];
 
 const EMPTY = { name: '', email: '', phone: '', subject: SUBJECTS[0], message: '' };
@@ -206,8 +221,14 @@ export default function ContactPage() {
 
         <aside className="space-y-4">
           {CHANNELS.map(({ Icon, label, value, href }) => {
-            const body = (
-              <>
+            const external = href.startsWith('http');
+            return (
+              <a
+                key={label}
+                href={href}
+                {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                className="surface p-5 flex items-start gap-4 hover:-translate-y-0.5 hover:shadow-e3 transition-all duration-300"
+              >
                 <span className="w-10 h-10 shrink-0 rounded-[13px] bg-brand-50 flex items-center justify-center">
                   <Icon className="w-[18px] h-[18px] text-brand-600" />
                 </span>
@@ -215,24 +236,11 @@ export default function ContactPage() {
                   <span className="block text-[12.5px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                     {label}
                   </span>
-                  <span className="block text-[14.5px] font-semibold text-ink mt-1 truncate">
+                  <span className="block text-[14.5px] font-semibold text-ink mt-1 leading-[1.55]">
                     {value}
                   </span>
                 </span>
-              </>
-            );
-            return href ? (
-              <a
-                key={label}
-                href={href}
-                className="surface p-5 flex items-center gap-4 hover:-translate-y-0.5 hover:shadow-e3 transition-all duration-300"
-              >
-                {body}
               </a>
-            ) : (
-              <div key={label} className="surface p-5 flex items-center gap-4">
-                {body}
-              </div>
             );
           })}
 
