@@ -1,21 +1,23 @@
 # Production Deployment — motojobs.in
 
-Stack: **App Runner** (app) + **Supabase Postgres** (db) + **SES** (email) + **S3** (uploads), region `ap-south-1` (Mumbai).
+Stack: **App Runner** (app) + **Supabase Postgres** (db) + **Resend** (email) + **S3** (uploads), region `ap-south-1` (Mumbai).
 
-Do the steps in order. SES production access takes 24–48h to approve, so **start with Part 1 today** — everything else can proceed while you wait.
+Do the steps in order. Domain verification in Resend needs DNS propagation, so **start with Part 1 today** — everything else can proceed while you wait.
 
 ---
 
-## Part 1 — SES (start this first)
+## Part 1 — Resend (start this first)
 
 ### 1.1 Verify the domain
 
-SES Console → **Identities** → *Create identity* → **Domain** → `motojobs.in`
+Resend Dashboard → **Domains** → *Add Domain* → `motojobs.in`.
 
-- Tick **Use a custom MAIL FROM domain**, set subdomain `mail`
-  (This makes the bounce path `mail.motojobs.in` instead of `amazonses.com`, which aligns SPF with your From address and improves deliverability.)
-- Tick **Easy DKIM**, key length **RSA_2048**
-- Click Create — AWS then shows you the CNAME records for the next step.
+Resend then shows the exact DNS records for the next step. It provisions a `send.motojobs.in` MAIL FROM subdomain automatically, which keeps the bounce path off the root and aligns SPF with your From address.
+
+> **Done — verified 2026-08-02.** Domain id `1ca05af2-bc7f-4264-808f-20d750c87e67`,
+> region `us-east-1`, sending **enabled**, all three DNS records reading `verified`.
+> The section below is kept for reference and for rebuilding the records if DNS is
+> ever migrated.
 
 ### 1.2 DNS records
 
@@ -23,35 +25,37 @@ SES Console → **Identities** → *Create identity* → **Domain** → `motojob
 > `MX → 1 smtp.google.com`, Google DKIM published at `google._domainkey`,
 > DMARC at `p=quarantine`, and **no SPF record at all**.
 >
-> Adding SES alongside Workspace is fine — but read the three warnings below
+> Adding Resend alongside Workspace is fine — but read the three warnings below
 > before touching DNS, because two of them can break your existing email.
 
-Add these at your domain registrar. **Copy the DKIM values from your own SES console** — the tokens below are placeholders unique to each account.
+These are the records now live on the domain:
 
-| Type  | Name                                    | Value                                | Note |
-|-------|-----------------------------------------|--------------------------------------|------|
-| CNAME | `<token1>._domainkey.motojobs.in`       | `<token1>.dkim.amazonses.com`        | from SES |
-| CNAME | `<token2>._domainkey.motojobs.in`       | `<token2>.dkim.amazonses.com`        | from SES |
-| CNAME | `<token3>._domainkey.motojobs.in`       | `<token3>.dkim.amazonses.com`        | from SES |
-| MX    | `mail.motojobs.in`                      | `10 feedback-smtp.ap-south-1.amazonses.com` | MAIL FROM subdomain — **not** the root |
-| TXT   | `mail.motojobs.in`                      | `"v=spf1 include:amazonses.com ~all"` | MAIL FROM SPF |
-| TXT   | `motojobs.in`                           | `"v=spf1 include:_spf.google.com include:amazonses.com ~all"` | **covers both senders — see #1** |
+| Type  | Name                            | Value                                        | Note |
+|-------|---------------------------------|----------------------------------------------|------|
+| TXT   | `resend._domainkey.motojobs.in` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC5r9J7n7rGjH1GLQdeY3IyuXmBH+NMSyG8qkawq/3XyB8oOHOWZYJSb5j/Jet2M/9PLwghU/KCPOMe3+cBhfaX1XviFxXa2TK0saV0CiZEEuZJXzaj2VLmzx2vC4Xmrr502SHt+EREQIfyuHnO2tQQpz7nC46Ht301ZmECH7lbAwIDAQAB` | DKIM |
+| MX    | `send.motojobs.in`              | `10 feedback-smtp.us-east-1.amazonses.com`   | MAIL FROM subdomain — **not** the root |
+| TXT   | `send.motojobs.in`              | `"v=spf1 include:amazonses.com ~all"`        | MAIL FROM SPF |
+| TXT   | `motojobs.in`                   | `"v=spf1 include:_spf.google.com ~all"`      | Workspace only — **see #1** |
 
-SES DKIM uses three CNAMEs at `<token>._domainkey`, and Google's sits at `google._domainkey`. Different names, so they coexist — do not delete the Google record.
+Resend's DKIM sits at `resend._domainkey` and Google's at `google._domainkey`. Different names, so they coexist — do not delete the Google record.
+
+Note the MAIL FROM host is `us-east-1`, not `ap-south-1`: Resend relays through its own infrastructure, and its region is independent of where App Runner runs. This is not a misconfiguration and does not need fixing.
 
 ---
 
-#### ⚠️ 1 — You have no SPF record. Publish the combined one.
+#### ⚠️ 1 — You have no SPF record. Publish one for Workspace.
 
 Right now `motojobs.in` publishes only a `google-site-verification` TXT. No SPF at all. That means your Workspace mail is currently unauthenticated by SPF and leaning entirely on DKIM.
 
-Publish exactly one SPF TXT at the root covering **both** senders:
+Publish exactly one SPF TXT at the root:
 
 ```
-v=spf1 include:_spf.google.com include:amazonses.com ~all
+v=spf1 include:_spf.google.com ~all
 ```
 
-Never create two SPF records — a domain with two SPF TXTs is a `permerror`, and **both** Workspace and SES mail start failing. One record, both includes.
+Resend does **not** need an include here — its bounce path lives on `send.motojobs.in`, which carries its own SPF record, and relaxed DMARC alignment (`aspf=r`) lets that subdomain align with a `motojobs.in` From address.
+
+Never create two SPF records — a domain with two SPF TXTs is a `permerror`, and **both** Workspace and Resend mail start failing. One record at the root, one on the subdomain.
 
 #### ⚠️ 2 — Your DMARC is already at `p=quarantine`.
 
@@ -61,23 +65,21 @@ Current record:
 v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:dmarc_rua@onsecureserver.net;
 ```
 
-This is stricter than the `p=none` starting point in most guides — it means **any message failing both SPF and DKIM goes to spam immediately.** There is no soft-launch grace period. If SES DKIM isn't verified before your first signup email, that OTP lands in spam.
+This is stricter than the `p=none` starting point in most guides — it means **any message failing both SPF and DKIM goes to spam immediately.** There is no soft-launch grace period. If Resend's DKIM isn't verified before your first signup email, that OTP lands in spam.
 
-So the order matters: **confirm SES shows "Verified" and send yourself a test before pointing real signups at it.** Do not relax `p=quarantine` to `p=none` — your domain is better off where it is. Relaxed alignment (`adkim=r`, `aspf=r`) is already set, which is what lets the `mail.motojobs.in` MAIL FROM subdomain align with a `motojobs.in` From address.
+So the order matters: **confirm the domain shows "Verified" in Resend and send yourself a test before pointing real signups at it.** Do not relax `p=quarantine` to `p=none` — your domain is better off where it is. Relaxed alignment (`adkim=r`, `aspf=r`) is already set, which is what lets the `send.motojobs.in` MAIL FROM subdomain align with a `motojobs.in` From address.
 
-Also worth noting: DMARC reports currently go to `dmarc_rua@onsecureserver.net` — a hosting provider's address, not yours. You won't see SES authentication failures. Consider adding your own:
+Also worth noting: DMARC reports currently go to `dmarc_rua@onsecureserver.net` — a hosting provider's address, not yours. You won't see authentication failures. Consider adding your own:
 
 ```
 v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:dmarc_rua@onsecureserver.net,mailto:dmarc@motojobs.in; fo=1
 ```
 
-#### ⚠️ 3 — The MAIL FROM MX goes on `mail.motojobs.in`, never the root.
+#### ⚠️ 3 — The MAIL FROM MX goes on `send.motojobs.in`, never the root.
 
-Your root MX is `1 smtp.google.com` and it must stay exactly that. The SES MAIL FROM record is a **separate hostname** (`mail.motojobs.in`).
+Your root MX is `1 smtp.google.com` and it must stay exactly that. Resend's MAIL FROM record is a **separate hostname** (`send.motojobs.in`).
 
-If you add the SES MX at the root by mistake, inbound Google Workspace mail breaks immediately. Double-check the Name field says `mail` and not `@` before saving.
-
-> If `mail.motojobs.in` is already used for something (webmail redirect, etc.), pick a different subdomain in the SES console — `bounce.motojobs.in` works — and adjust both records to match.
+If you add that MX at the root by mistake, inbound Google Workspace mail breaks immediately. Double-check the Name field says `send` and not `@` before saving.
 
 ---
 
@@ -93,53 +95,46 @@ Google Admin → **Directory → Groups** → create `support@motojobs.in` → a
 
 A group costs nothing extra; a new Workspace user costs a full licence.
 
-Do **not** create a `noreply@` mailbox. SES sends from that address without it existing as a Workspace user — and leaving it unroutable is intentional, since replies should go to `support@`.
+Do **not** create a `noreply@` mailbox. Resend sends from that address without it existing as a Workspace user — and leaving it unroutable is intentional, since replies should go to `support@`.
 
-### 1.4 Configuration set (bounce tracking)
+### 1.4 API key
 
-SES Console → **Configuration sets** → create `motojobs-transactional`
+Resend Dashboard → **API Keys** → *Create API Key*, permission **Sending access**, scoped to the `motojobs.in` domain.
 
-Add an event destination for **Bounce, Complaint, Delivery, Reject** → CloudWatch. Without this, a run of bad addresses silently degrades your reputation until AWS suspends sending.
+The key is shown once. Set it as `RESEND_API_KEY` in App Runner's environment (Part 4) — it is the only email credential the app needs. Leave it unset and email drops to dev mode: the OTP is logged to the console instead of sent.
 
-### 1.5 Request production access
+> **Done.** A key exists and is set in the local `.env` (gitignored). It is *not* yet
+> in Secrets Manager or App Runner — see Part 4.4.
 
-New SES accounts are sandboxed: you can only send to addresses you've verified, capped at 200/day. To send to real users you must request production access.
+### 1.5 Sending limits
 
-SES Console → **Account dashboard** → *Request production access*
+The free tier allows 3,000 emails/month and 100/day, which covers early signups. There is no sandbox and no 24–48h approval queue — sending to real addresses works as soon as the domain verifies. Upgrade in the dashboard when daily volume approaches the cap.
 
-Draft to submit:
-
-> **Mail type:** Transactional
-> **Website:** https://motojobs.in
-> **Use case:** Motojobs.in is a recruitment platform for India's automobile sector. We send only transactional email triggered by an explicit user action: (1) a 6-digit OTP to verify a user's email address at signup, (2) a password-reset OTP requested by the user, (3) a one-time welcome message after successful verification, and (4) contact-form enquiries routed to our own support inbox. We do not send marketing or bulk email.
-> **Bounce/complaint handling:** All sending uses a configuration set (`motojobs-transactional`) with bounce and complaint events published to CloudWatch. Addresses that hard-bounce are suppressed and the associated account is flagged as unverified. Our OTP codes expire in 10 minutes and are rate-limited per IP and per account.
-> **List management:** No mailing lists — every send is triggered by a user action on their own account. Recipients cannot subscribe.
-> **Expected volume:** Under 2,000 emails/day initially.
-
-Approval is usually 24–48h.
+Resend tracks bounces and complaints per-domain automatically; no configuration set to create.
 
 ### 1.6 Verify DNS from your machine
 
 Once records propagate:
 
 ```bash
-# Exactly ONE spf1 line, containing both _spf.google.com and amazonses.com
+# Exactly ONE spf1 line at the root, containing _spf.google.com
 dig +short TXT motojobs.in | grep spf1
 
 # Must still be: 1 smtp.google.com  — if this changed, Workspace inbound is broken
 dig +short MX motojobs.in
 
-# SES MAIL FROM, on the subdomain only
-dig +short MX mail.motojobs.in
-dig +short TXT mail.motojobs.in
+# Resend MAIL FROM, on the subdomain only
+dig +short MX send.motojobs.in
+dig +short TXT send.motojobs.in
 
-# Google's DKIM must still resolve alongside the new SES ones
+# Both DKIM keys must resolve
+dig +short TXT resend._domainkey.motojobs.in
 dig +short TXT google._domainkey.motojobs.in
 ```
 
-If the first command returns **two** lines, stop and merge them — two SPF records is a `permerror` that breaks Workspace and SES together.
+If the first command returns **two** lines, stop and merge them — two SPF records is a `permerror` that breaks Workspace and Resend together.
 
-After go-live, send a test to `check-auth@verifier.port25.com` — it replies with a full SPF/DKIM/DMARC report. Do this **twice**: once from the app (SES path) and once from Gmail (Workspace path). Both must pass, because your `p=quarantine` policy gives no margin.
+After go-live, send a test to `check-auth@verifier.port25.com` — it replies with a full SPF/DKIM/DMARC report. Do this **twice**: once from the app (Resend path) and once from Gmail (Workspace path). Both must pass, because your `p=quarantine` policy gives no margin.
 
 ---
 
@@ -147,7 +142,7 @@ After go-live, send a test to `check-auth@verifier.port25.com` — it replies wi
 
 Supabase rather than RDS, for cost. RDS on `db.t4g.micro` runs ~$18/mo, but the larger
 charge is indirect: a private RDS instance forces an App Runner **VPC connector**, and a
-VPC connector removes App Runner's default internet egress, so reaching SES/S3/OpenAI then
+VPC connector removes App Runner's default internet egress, so reaching Resend/S3/OpenAI then
 requires a **NAT Gateway** at ~$33/mo. Supabase is a public TLS endpoint, so both
 disappear. Total saved: ~$51/mo.
 
@@ -319,21 +314,12 @@ npx prisma migrate deploy
 
 ### 4.2 IAM instance role
 
-Create role `motojobs-apprunner-instance`, trusted by `tasks.apprunner.amazonaws.com`, with this inline policy. The app authenticates to SES and S3 through this role — **no access keys in environment variables.**
+Create role `motojobs-apprunner-instance`, trusted by `tasks.apprunner.amazonaws.com`, with this inline policy. The app authenticates to S3 through this role — **no access keys in environment variables.** Email does not use IAM at all; Resend authenticates with `RESEND_API_KEY`.
 
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
-    {
-      "Sid": "SendTransactionalEmail",
-      "Effect": "Allow",
-      "Action": ["ses:SendEmail"],
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": { "ses:FromAddress": "noreply@motojobs.in" }
-      }
-    },
     {
       "Sid": "UploadsBucket",
       "Effect": "Allow",
@@ -349,16 +335,21 @@ Create role `motojobs-apprunner-instance`, trusted by `tasks.apprunner.amazonaws
 App Runner Console → *Create service* → **Source: Container registry** → ECR repository `motojobs`, tag pushed by the workflow
 
 - ECR access role: `motojobs-apprunner-ecr-access` (lets App Runner pull the image)
-- Instance role: `motojobs-apprunner-instance` (lets the app call SES/S3/Secrets Manager)
+- Instance role: `motojobs-apprunner-instance` (lets the app call S3/Secrets Manager)
 - Port: `3000`
 - Health check path: `/`
 - Deployment trigger: **Manual** — the workflow calls `update-service` itself
 - **Networking: leave as Public access (default egress).** Do **not** attach a VPC
   connector. Supabase is a public endpoint, so there is nothing to reach privately —
   and attaching a connector routes all outbound traffic through your VPC route table,
-  which silently breaks SES, S3, and OpenAI until you add a NAT Gateway (~$33/mo).
+  which silently breaks Resend, S3, and OpenAI until you add a NAT Gateway (~$33/mo).
 
 ### 4.4 Environment variables
+
+⚠️ **These live in two places and must be kept in sync.** `apprunner update-service`
+*replaces* `SourceConfiguration` rather than merging into it, so the deploy workflow
+restates the whole block on every run. If you add a variable in the console but not
+in `.github/workflows/deploy.yml`, the next deploy silently deletes it. Add to both.
 
 Plaintext (set directly):
 
@@ -367,7 +358,6 @@ Plaintext (set directly):
 | `NODE_ENV` | `production` |
 | `AWS_REGION` | `ap-south-1` |
 | `S3_BUCKET` | `motojobs-uploads` |
-| `SES_CONFIGURATION_SET` | `motojobs-transactional` |
 | `EMAIL_FROM_ADDRESS` | `noreply@motojobs.in` |
 | `EMAIL_FROM_NAME` | `Motojobs.in` |
 | `EMAIL_REPLY_TO` | `support@motojobs.in` |
@@ -385,6 +375,7 @@ Secrets (reference by **Secrets Manager ARN**, never paste the value):
 | `JWT_SECRET` | new 64-char random — see below |
 | `NEXTAUTH_SECRET` | new 64-char random |
 | `OPENAI_API_KEY` | your key |
+| `RESEND_API_KEY` | sending key from the Resend dashboard (Part 1.4) |
 
 **Generate fresh secrets for production.** The values in your local `.env` have been on a dev machine and must not be reused:
 
@@ -424,8 +415,8 @@ Then walk the real signup flow in a browser:
 10. **Send a normal email from Gmail as yourself** → confirm Workspace still authenticates cleanly after the SPF change
 
 Watch during the first days:
-- **CloudWatch** → SES bounce rate (**keep under 5%**) and complaint rate (**under 0.1%**) — AWS suspends sending above these
-- **App Runner** → application logs for SES `MessageRejected` errors
+- **Resend dashboard** → Emails/Logs for bounce and complaint rates (keep bounces under 5%, complaints under 0.1%) — providers throttle senders above these
+- **App Runner** → application logs for Resend send errors
 - **Supabase** → Database → *Roles* / *Reports* for active connections, and *Settings →
   Usage* for the 500 MB and 5 GB egress ceilings
 
@@ -437,7 +428,7 @@ Not blocking launch, but you should know about them:
 
 1. **Rate limiting is in-memory** (`src/lib/rate-limit.ts`). It resets on deploy and each App Runner instance keeps its own counters, so with N instances the effective OTP limit is N× what's configured. Move to ElastiCache Redis when you scale past one instance.
 
-2. **No SES suppression handling.** Bounces are logged to CloudWatch but nothing marks the address unusable in your database. If a domain starts hard-bouncing you'll keep retrying it. Worth adding an SNS topic → webhook that flags `isEmailVerified = false`.
+2. **No bounce suppression handling.** Resend records bounces in its own dashboard, but nothing marks the address unusable in your database. If a domain starts hard-bouncing you'll keep retrying it. Worth adding a Resend webhook that flags `isEmailVerified = false` on `email.bounced`.
 
 3. **Old uploads.** Anything currently in `public/uploads/` stays on the dev machine — it is not migrated. If there's real data there, copy it to S3 and rewrite the stored URLs before cutover.
 

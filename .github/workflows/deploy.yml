@@ -56,12 +56,37 @@ jobs:
             exit 1
           fi
 
+          # update-service REPLACES SourceConfiguration wholesale — it does not
+          # merge. Omitting the env block here wipes every variable and secret
+          # off the running service, so the full set must be restated on every
+          # deploy. Keep this in sync with DEPLOYMENT.md §4.4.
           cat > /tmp/source-config.json <<EOF
           {
             "ImageRepository": {
               "ImageIdentifier": "$IMAGE",
               "ImageRepositoryType": "ECR",
-              "ImageConfiguration": { "Port": "3000" }
+              "ImageConfiguration": {
+                "Port": "3000",
+                "RuntimeEnvironmentVariables": {
+                  "NODE_ENV": "production",
+                  "AWS_REGION": "ap-south-1",
+                  "S3_BUCKET": "motojobs-uploads",
+                  "EMAIL_FROM_ADDRESS": "noreply@motojobs.in",
+                  "EMAIL_FROM_NAME": "Motojobs.in",
+                  "EMAIL_REPLY_TO": "support@motojobs.in",
+                  "CONTACT_INBOX": "support@motojobs.in",
+                  "NEXT_PUBLIC_APP_URL": "https://motojobs.in",
+                  "NEXT_PUBLIC_APP_NAME": "Motojobs.in",
+                  "BILLING_ENABLED": "false"
+                },
+                "RuntimeEnvironmentSecrets": {
+                  "DATABASE_URL": "arn:aws:secretsmanager:ap-south-1:298713973792:secret:motojobs/DATABASE_URL-4m3TIZ",
+                  "DIRECT_URL": "arn:aws:secretsmanager:ap-south-1:298713973792:secret:motojobs/DIRECT_URL-Rdh7K0",
+                  "JWT_SECRET": "arn:aws:secretsmanager:ap-south-1:298713973792:secret:motojobs/JWT_SECRET-IwdUSV",
+                  "NEXTAUTH_SECRET": "arn:aws:secretsmanager:ap-south-1:298713973792:secret:motojobs/NEXTAUTH_SECRET-RDON6D",
+                  "RESEND_API_KEY": "arn:aws:secretsmanager:ap-south-1:298713973792:secret:motojobs/RESEND_API_KEY-x6vW0S"
+                }
+              }
             },
             "AuthenticationConfiguration": {
               "AccessRoleArn": "arn:aws:iam::298713973792:role/motojobs-apprunner-ecr-access"

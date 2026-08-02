@@ -1,11 +1,7 @@
-import {
-  SESv2Client,
-  SendEmailCommand,
-  type SendEmailCommandInput,
-} from "@aws-sdk/client-sesv2";
+import { Resend } from "resend";
 
 /**
- * Transactional email via Amazon SES.
+ * Transactional email via Resend.
  *
  * Deliverability rules baked in here, because getting any of them wrong is what
  * lands a noreply@ domain in spam:
@@ -14,24 +10,20 @@ import {
  *  - `Reply-To` points at a monitored inbox. A noreply From with no Reply-To is
  *    a documented spam signal, and users do hit reply.
  *  - Every message ships a plain-text part. HTML-only mail scores badly.
- *  - A configuration set records bounces/complaints. Without it a bad address
- *    list silently burns the domain reputation.
  */
 
-const REGION = process.env.AWS_REGION || "ap-south-1";
-const CONFIG_SET = process.env.SES_CONFIGURATION_SET;
+const API_KEY = process.env.RESEND_API_KEY;
 
 const FROM_ADDRESS = process.env.EMAIL_FROM_ADDRESS || "noreply@motojobs.in";
 const FROM_NAME = process.env.EMAIL_FROM_NAME || "Motojobs.in";
 const REPLY_TO = process.env.EMAIL_REPLY_TO || "support@motojobs.in";
 
-// Long-lived client: App Runner reuses the container across requests, so
-// rebuilding this per-send would add a credential lookup to every email.
-const ses = new SESv2Client({ region: REGION });
+// Long-lived client: App Runner reuses the container across requests.
+const resend = API_KEY ? new Resend(API_KEY) : null;
 
 /**
  * RFC 5322 display names must be quoted-string escaped, otherwise a name
- * containing a comma or quote produces a malformed header that SES rejects.
+ * containing a comma or quote produces a malformed header the API rejects.
  */
 function formatFrom() {
   const escaped = FROM_NAME.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
@@ -53,34 +45,25 @@ type Mail = {
  */
 async function deliver(mail: Mail) {
   const isProd = process.env.NODE_ENV === "production";
-  const configured = Boolean(process.env.AWS_REGION || process.env.AWS_EXECUTION_ENV);
 
-  if (!configured) {
+  if (!resend) {
     if (isProd) {
-      throw new Error("SES is not configured — cannot send transactional email");
+      throw new Error("RESEND_API_KEY is not set — cannot send transactional email");
     }
     console.info(`[email:dev] to=${mail.to} subject=${mail.subject}`);
     return;
   }
 
-  const input: SendEmailCommandInput = {
-    FromEmailAddress: formatFrom(),
-    Destination: { ToAddresses: [mail.to] },
-    ReplyToAddresses: [mail.replyTo || REPLY_TO],
-    Content: {
-      Simple: {
-        Subject: { Data: mail.subject, Charset: "UTF-8" },
-        Body: {
-          Html: { Data: mail.html, Charset: "UTF-8" },
-          Text: { Data: mail.text, Charset: "UTF-8" },
-        },
-      },
-    },
-    ...(CONFIG_SET ? { ConfigurationSetName: CONFIG_SET } : {}),
-  };
-
   try {
-    await ses.send(new SendEmailCommand(input));
+    const { error } = await resend.emails.send({
+      from: formatFrom(),
+      to: [mail.to],
+      replyTo: mail.replyTo || REPLY_TO,
+      subject: mail.subject,
+      html: mail.html,
+      text: mail.text,
+    });
+    if (error) throw new Error(`${error.name}: ${error.message}`);
   } catch (err) {
     if (isProd) throw err;
     console.warn(
