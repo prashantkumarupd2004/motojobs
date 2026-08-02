@@ -203,13 +203,17 @@ function VerifyEmailForm() {
 export default function VerifyEmailPage() {
   return (
     <AuthShell
-      title="One last step"
+      headline={
+        <>
+          One Last Step.
+          <br />
+          <span className="text-[#3B82F6]">Verify & Go.</span>
+        </>
+      }
       subtitle="Confirm your email address to activate your MotoJobs account and start applying."
-      bullets={[
-        'Codes expire after 10 minutes',
-        'Five attempts per code, then request a new one',
-        'Never share your code with anyone',
-      ]}
+      altPrompt="Wrong account?"
+      altLabel="Login"
+      altHref="/login"
     >
       <Suspense
         fallback={

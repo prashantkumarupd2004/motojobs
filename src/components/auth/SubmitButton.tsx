@@ -1,5 +1,5 @@
 'use client';
-import { Loader2, ArrowRight } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface SubmitButtonProps {
   loading: boolean;
@@ -20,25 +20,23 @@ export default function SubmitButton({
     <button
       type="submit"
       disabled={loading || disabled}
-      className={`group relative w-full overflow-hidden text-white font-semibold text-[15px] rounded-[14px] py-4
-        ${tone === 'ignite' ? 'grad-ignite shadow-ignite' : 'grad-brand shadow-brand'}
-        transition-all duration-400 [transition-timing-function:var(--ease-premium)]
-        hover:-translate-y-0.5 hover:shadow-e4 active:translate-y-0 active:scale-[0.99]
-        disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none
+      className={`w-full text-white font-semibold text-[15px] rounded-[9px] py-3.5
+        ${
+          tone === 'ignite'
+            ? 'bg-[#EA580C] hover:bg-[#C2410C] shadow-[0_2px_10px_rgba(234,88,12,0.25)]'
+            : 'bg-[#2563EB] hover:bg-[#1D4ED8] shadow-[0_2px_10px_rgba(37,99,235,0.25)]'
+        }
+        transition-colors duration-200
+        disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
         flex items-center justify-center gap-2`}
     >
-      {/* Sheen sweeps across on hover — the one flourish on the primary action. */}
-      <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 [transition-timing-function:var(--ease-premium)] group-hover:translate-x-full group-disabled:hidden" />
       {loading ? (
         <>
           <Loader2 className="w-[18px] h-[18px] animate-spin" />
           {loadingLabel}
         </>
       ) : (
-        <>
-          {children}
-          <ArrowRight className="w-[18px] h-[18px] transition-transform duration-300 [transition-timing-function:var(--ease-premium)] group-hover:translate-x-1" />
-        </>
+        children
       )}
     </button>
   );

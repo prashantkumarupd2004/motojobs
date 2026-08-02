@@ -187,13 +187,17 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <AuthShell
-      title="Almost there"
+      headline={
+        <>
+          Almost There.
+          <br />
+          <span className="text-[#3B82F6]">Set a New Password.</span>
+        </>
+      }
       subtitle="Choose a strong password you haven't used elsewhere."
-      bullets={[
-        'Minimum 8 characters with a letter and a number',
-        'Codes expire after 10 minutes',
-        'You will be asked to log in again afterwards',
-      ]}
+      altPrompt="Remembered it?"
+      altLabel="Login"
+      altHref="/login"
     >
       <Suspense
         fallback={

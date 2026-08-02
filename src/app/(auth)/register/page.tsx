@@ -13,23 +13,31 @@ import {
   Briefcase,
   AlertCircle,
   Check,
+  ShieldCheck,
+  Zap,
+  TrendingUp,
 } from 'lucide-react';
 import AuthShell from '@/components/auth/AuthShell';
+import RoleTabs, { type Role } from '@/components/auth/RoleTabs';
 import Field from '@/components/auth/Field';
 import SubmitButton from '@/components/auth/SubmitButton';
-
-type Role = 'CANDIDATE' | 'RECRUITER';
 
 /** Mirrors the server rule: 8+ chars with at least one letter and one number. */
 function strengthOf(pw: string) {
   if (!pw) return null;
   const checks = [pw.length >= 8, /[a-z]/.test(pw) && /[A-Z]/.test(pw), /\d/.test(pw), /[^A-Za-z0-9]/.test(pw)];
   const score = checks.filter(Boolean).length;
-  if (score <= 1) return { score, label: 'Weak', tone: 'bg-critical', text: 'text-critical' };
-  if (score === 2) return { score, label: 'Fair', tone: 'bg-caution', text: 'text-caution' };
-  if (score === 3) return { score, label: 'Good', tone: 'bg-brand-500', text: 'text-brand-600' };
-  return { score, label: 'Strong', tone: 'bg-positive', text: 'text-positive' };
+  if (score <= 1) return { score, label: 'Weak', tone: 'bg-[#EF4444]', text: 'text-[#EF4444]' };
+  if (score === 2) return { score, label: 'Fair', tone: 'bg-[#F59E0B]', text: 'text-[#B45309]' };
+  if (score === 3) return { score, label: 'Good', tone: 'bg-[#2563EB]', text: 'text-[#2563EB]' };
+  return { score, label: 'Strong', tone: 'bg-[#16A34A]', text: 'text-[#16A34A]' };
 }
+
+const TRUST = [
+  { Icon: Users, title: '100% Free', detail: 'No hidden charges for job seekers' },
+  { Icon: ShieldCheck, title: 'Secure & Private', detail: 'Your data is safe with us' },
+  { Icon: Zap, title: 'Quick & Easy', detail: 'Get started in just a few minutes' },
+];
 
 function RegisterForm() {
   const router = useRouter();
@@ -100,59 +108,18 @@ function RegisterForm() {
 
   return (
     <>
-      <h1 className="text-[29px] sm:text-[32px] font-extrabold text-ink tracking-[-0.038em] leading-[1.12]">
-        Create your account
+      <h1 className="text-center text-[32px] sm:text-[34px] font-bold text-[#0F172A] tracking-[-0.035em] leading-[1.15]">
+        Create Your Account
       </h1>
-      <p className="mt-2.5 text-ink-muted text-[14.5px] leading-[1.65]">
-        Already have one?{' '}
-        <Link
-          href="/login"
-          className="font-semibold text-brand-600 hover:text-brand-700 transition-colors"
-        >
-          Log in
-        </Link>
+      <p className="mt-2.5 text-center text-[#475569] text-[15px]">
+        Join MotoJobs.in and start your journey today
       </p>
 
-      {/* Role selector — the sliding pill makes the switch feel physical. */}
-      <div
-        role="radiogroup"
-        aria-label="Account type"
-        className="relative mt-7 grid grid-cols-2 gap-1.5 rounded-[16px] border border-line bg-line-soft p-1.5"
-      >
-        <span
-          aria-hidden
-          className={`absolute inset-y-1.5 w-[calc(50%-0.375rem)] rounded-[12px] transition-transform duration-500 [transition-timing-function:var(--ease-premium)] ${
-            isEmployer
-              ? 'translate-x-[calc(100%+0.375rem)] grad-ignite shadow-[0_3px_10px_rgba(255,107,0,0.28)]'
-              : 'translate-x-0 grad-brand shadow-[0_3px_10px_rgba(15,76,129,0.26)]'
-          }`}
-        />
-        {(
-          [
-            { value: 'CANDIDATE', label: 'Job Seeker', Icon: Users },
-            { value: 'RECRUITER', label: 'Employer', Icon: Building2 },
-          ] as const
-        ).map(({ value, label, Icon }) => {
-          const active = role === value;
-          return (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => switchRole(value)}
-              className={`relative z-10 flex items-center justify-center gap-2 py-3 rounded-[12px] text-[13.5px] font-semibold transition-colors duration-300 ${
-                active ? 'text-white' : 'text-ink-muted hover:text-ink-soft'
-              }`}
-            >
-              <Icon className="w-4 h-4" strokeWidth={2.2} />
-              {label}
-            </button>
-          );
-        })}
+      <div className="mt-8">
+        <RoleTabs value={role} onChange={switchRole} />
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+      <form onSubmit={handleSubmit} className="mt-7 space-y-5">
         {isEmployer && (
           <Field
             id="companyName"
@@ -166,7 +133,7 @@ function RegisterForm() {
           />
         )}
 
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field
             id="firstName"
             label={isEmployer ? 'HR first name' : 'First name'}
@@ -210,67 +177,67 @@ function RegisterForm() {
           icon={Mail}
           value={form.email}
           onChange={set('email')}
-          placeholder={isEmployer ? 'hr@yourcompany.com' : 'you@example.com'}
+          placeholder={isEmployer ? 'hr@yourcompany.com' : 'Enter your email address'}
           autoComplete="email"
           error={fieldErrors.email}
         />
 
         <Field
           id="phone"
-          label="Phone number"
+          label="Mobile number"
           type="tel"
           icon={Phone}
           value={form.phone}
           onChange={set('phone')}
-          placeholder="+91 98765 43210"
+          placeholder="Enter your mobile number"
           autoComplete="tel"
           required={false}
           error={fieldErrors.phone}
         />
 
-        <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Field
+              id="password"
+              label="Password"
+              type="password"
+              icon={Lock}
+              value={form.password}
+              onChange={set('password')}
+              placeholder="Create a password"
+              autoComplete="new-password"
+              error={fieldErrors.password}
+              hint={strength ? undefined : 'At least 8 characters, including a letter and a number.'}
+            />
+            {strength && !fieldErrors.password && (
+              <div className="mt-2.5 flex items-center gap-3">
+                <div className="flex-1 flex gap-1.5">
+                  {[0, 1, 2, 3].map((i) => (
+                    <span
+                      key={i}
+                      className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
+                        i < strength.score ? strength.tone : 'bg-[#E2E8F0]'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className={`text-[11.5px] font-bold ${strength.text}`}>{strength.label}</span>
+              </div>
+            )}
+          </div>
+
           <Field
-            id="password"
-            label="Password"
+            id="confirmPassword"
+            label="Confirm password"
             type="password"
             icon={Lock}
-            value={form.password}
-            onChange={set('password')}
-            placeholder="••••••••"
+            value={form.confirmPassword}
+            onChange={set('confirmPassword')}
+            placeholder="Confirm your password"
             autoComplete="new-password"
-            error={fieldErrors.password}
-            hint={strength ? undefined : 'At least 8 characters, including a letter and a number.'}
+            error={mismatch ? 'Passwords do not match' : fieldErrors.confirmPassword}
           />
-          {strength && !fieldErrors.password && (
-            <div className="mt-2.5 flex items-center gap-3">
-              <div className="flex-1 flex gap-1.5">
-                {[0, 1, 2, 3].map((i) => (
-                  <span
-                    key={i}
-                    className={`h-1 flex-1 rounded-full transition-colors duration-400 ${
-                      i < strength.score ? strength.tone : 'bg-line'
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className={`text-[11.5px] font-bold ${strength.text}`}>
-                {strength.label}
-              </span>
-            </div>
-          )}
         </div>
-
-        <Field
-          id="confirmPassword"
-          label="Confirm password"
-          type="password"
-          icon={Lock}
-          value={form.confirmPassword}
-          onChange={set('confirmPassword')}
-          placeholder="••••••••"
-          autoComplete="new-password"
-          error={mismatch ? 'Passwords do not match' : fieldErrors.confirmPassword}
-        />
 
         <label className="flex items-start gap-3 cursor-pointer group">
           <span className="relative mt-px shrink-0">
@@ -280,19 +247,19 @@ function RegisterForm() {
               onChange={(e) => setAccepted(e.target.checked)}
               className="peer sr-only"
             />
-            <span className="block w-[18px] h-[18px] rounded-[6px] border border-line bg-white transition-all duration-250 peer-checked:bg-brand-600 peer-checked:border-brand-600 peer-focus-visible:shadow-[0_0_0_4px_rgba(15,76,129,0.12)] group-hover:border-brand-300" />
+            <span className="block w-[18px] h-[18px] rounded-[5px] border border-[#CBD5E1] bg-white transition-colors duration-200 peer-checked:bg-[#2563EB] peer-checked:border-[#2563EB] peer-focus-visible:shadow-[0_0_0_3px_rgba(37,99,235,0.15)] group-hover:border-[#93C5FD]" />
             <Check
               className="absolute left-[3px] top-[3px] w-3 h-3 text-white opacity-0 transition-opacity duration-200 peer-checked:opacity-100 pointer-events-none"
               strokeWidth={3.5}
             />
           </span>
-          <span className="text-[12.5px] text-ink-muted leading-[1.6]">
+          <span className="text-[13px] text-[#475569] leading-[1.6]">
             I agree to the{' '}
-            <Link href="/terms" className="font-semibold text-brand-600 hover:text-brand-700">
+            <Link href="/terms" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
               Terms &amp; Conditions
             </Link>{' '}
             and{' '}
-            <Link href="/privacy" className="font-semibold text-brand-600 hover:text-brand-700">
+            <Link href="/privacy" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
               Privacy Policy
             </Link>
             .
@@ -301,11 +268,11 @@ function RegisterForm() {
 
         {error && (
           <div
-            className="flex items-start gap-2.5 rounded-[13px] bg-critical-soft border border-critical/20 px-3.5 py-3 animate-fade-in"
+            className="flex items-start gap-2.5 rounded-[9px] bg-[#FEF2F2] border border-[#FECACA] px-3.5 py-3 animate-fade-in"
             role="alert"
           >
-            <AlertCircle className="w-[17px] h-[17px] text-critical shrink-0 mt-px" />
-            <p className="text-[13px] font-medium text-critical leading-snug">{error}</p>
+            <AlertCircle className="w-[17px] h-[17px] text-[#EF4444] shrink-0 mt-px" />
+            <p className="text-[13px] font-medium text-[#EF4444] leading-snug">{error}</p>
           </div>
         )}
 
@@ -315,14 +282,28 @@ function RegisterForm() {
             loadingLabel="Creating account…"
             tone={isEmployer ? 'ignite' : 'brand'}
           >
-            {isEmployer ? 'Create employer account' : 'Create account'}
+            {isEmployer ? 'Create Employer Account' : 'Create Account'}
           </SubmitButton>
         </div>
 
-        <p className="text-center text-[12px] text-ink-faint">
+        <p className="text-center text-[12px] text-[#94A3B8]">
           We&apos;ll email you a 6-digit code to verify your address.
         </p>
       </form>
+
+      <div className="mt-8 pt-7 border-t border-[#F1F5F9] grid grid-cols-1 sm:grid-cols-3 gap-5">
+        {TRUST.map(({ Icon, title, detail }) => (
+          <div key={title} className="flex items-start gap-3">
+            <span className="w-9 h-9 shrink-0 rounded-full bg-[#EFF6FF] flex items-center justify-center">
+              <Icon className="w-[16px] h-[16px] text-[#2563EB]" strokeWidth={1.9} />
+            </span>
+            <span>
+              <span className="block text-[13px] font-semibold text-[#0F172A]">{title}</span>
+              <span className="block text-[12px] text-[#64748B] leading-[1.5] mt-0.5">{detail}</span>
+            </span>
+          </div>
+        ))}
+      </div>
     </>
   );
 }
@@ -330,18 +311,44 @@ function RegisterForm() {
 export default function RegisterPage() {
   return (
     <AuthShell
-      title="Start your journey"
-      subtitle="Join India's dedicated hiring platform for the automobile industry."
-      bullets={[
-        'Dealerships, workshops, OEMs & EV companies',
-        'Roles from technician to dealer principal',
-        'Free for job seekers, always',
+      headline={
+        <>
+          Your Next Opportunity
+          <br />
+          <span className="text-[#3B82F6]">Starts Here.</span>
+        </>
+      }
+      subtitle="Join thousands of professionals and top automotive companies building the future together."
+      features={[
+        {
+          Icon: Briefcase,
+          title: '10K+ Job Opportunities',
+          detail: 'Updated daily from top companies',
+        },
+        {
+          Icon: Building2,
+          title: 'Trusted by Top Employers',
+          detail: 'Leading automotive brands hire here',
+        },
+        {
+          Icon: TrendingUp,
+          title: 'Grow Your Career',
+          detail: 'Find the right job and grow faster',
+        },
       ]}
+      testimonial={{
+        quote: 'MotoJobs.in helped me find the perfect job that matched my skills and passion.',
+        name: 'Rahul Verma',
+        role: 'Service Advisor',
+      }}
+      altPrompt="Already have an account?"
+      altLabel="Login"
+      altHref="/login"
     >
       <Suspense
         fallback={
           <div className="flex justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-brand-600" />
+            <Loader2 className="w-6 h-6 animate-spin text-[#2563EB]" />
           </div>
         }
       >

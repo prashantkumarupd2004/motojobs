@@ -18,8 +18,8 @@ interface FieldProps {
 }
 
 const BASE =
-  'w-full bg-white text-ink placeholder-ink-faint text-[14.5px] rounded-[14px] pl-11 py-3.5 border outline-none ' +
-  'shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 [transition-timing-function:var(--ease-premium)]';
+  'w-full bg-white text-[#0F172A] placeholder-[#94A3B8] text-[14px] rounded-[9px] pl-11 py-3.5 border outline-none ' +
+  'transition-colors duration-200';
 
 export default function Field({
   id,
@@ -42,20 +42,17 @@ export default function Field({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <label
-          htmlFor={id}
-          className="text-[12.5px] font-semibold text-ink-soft tracking-[-0.01em]"
-        >
-          {label}
-        </label>
-        {action}
-      </div>
+      <label
+        htmlFor={id}
+        className="block mb-2 text-[13px] font-semibold text-[#0F172A] tracking-[-0.01em]"
+      >
+        {label}
+      </label>
 
       <div className="relative flex items-center group">
         <Icon
-          className="absolute left-4 w-[17px] h-[17px] text-ink-faint pointer-events-none transition-colors duration-300 group-focus-within:text-brand-600"
-          strokeWidth={2}
+          className="absolute left-3.5 w-[17px] h-[17px] text-[#94A3B8] pointer-events-none transition-colors duration-200 group-focus-within:text-[#2563EB]"
+          strokeWidth={1.8}
         />
         <input
           id={id}
@@ -70,8 +67,8 @@ export default function Field({
           aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
           className={`${BASE} ${isPassword ? 'pr-11' : 'pr-4'} ${
             error
-              ? 'border-critical focus:border-critical focus:shadow-[0_0_0_4px_rgba(239,68,68,0.10)]'
-              : 'border-line hover:border-brand-200 focus:border-brand-600 focus:shadow-[0_0_0_4px_rgba(15,76,129,0.10)]'
+              ? 'border-[#EF4444] focus:border-[#EF4444] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.10)]'
+              : 'border-[#E2E8F0] hover:border-[#CBD5E1] focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]'
           }`}
         />
         {isPassword && (
@@ -79,19 +76,21 @@ export default function Field({
             type="button"
             onClick={() => setReveal((s) => !s)}
             aria-label={reveal ? 'Hide password' : 'Show password'}
-            className="absolute right-3.5 p-1 rounded-lg text-ink-faint hover:text-brand-600 hover:bg-brand-50 transition-colors duration-200"
+            className="absolute right-3.5 p-1 rounded-lg text-[#94A3B8] hover:text-[#2563EB] transition-colors duration-200"
           >
             {reveal ? <EyeOff className="w-[17px] h-[17px]" /> : <Eye className="w-[17px] h-[17px]" />}
           </button>
         )}
       </div>
 
+      {action && <div className="mt-2 flex justify-end">{action}</div>}
+
       {error ? (
-        <p id={`${id}-error`} className="mt-1.5 text-[12.5px] font-medium text-critical">
+        <p id={`${id}-error`} className="mt-1.5 text-[12.5px] font-medium text-[#EF4444]">
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="mt-1.5 text-[12px] text-ink-faint">
+        <p id={`${id}-hint`} className="mt-1.5 text-[12px] text-[#94A3B8]">
           {hint}
         </p>
       ) : null}

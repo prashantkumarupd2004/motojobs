@@ -36,13 +36,17 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      title="Forgot your password?"
-      subtitle="No problem. We'll email you a 6-digit code so you can set a new one."
-      bullets={[
-        'Codes expire after 10 minutes',
-        'Your password stays unchanged until you confirm',
-        'Never share your code with anyone',
-      ]}
+      headline={
+        <>
+          Forgot Your Password?
+          <br />
+          <span className="text-[#3B82F6]">We&apos;ve Got You.</span>
+        </>
+      }
+      subtitle="Enter your registered email and we'll send you a 6-digit code to set a new password."
+      altPrompt="Remembered it?"
+      altLabel="Login"
+      altHref="/login"
     >
       <Link
         href="/login"

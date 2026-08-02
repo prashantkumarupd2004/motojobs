@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { Menu, X, User, LogOut, ChevronDown } from 'lucide-react';
@@ -15,24 +16,6 @@ const NAV_LINKS: [string, string][] = [
   ['Contact Us',      '/contact'],
 ];
 
-/* ── Steering wheel logo SVG ─────────────────────────────────── */
-function LogoMark() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden>
-      {/* Outer rim */}
-      <circle cx="18" cy="18" r="16" stroke="#2563EB" strokeWidth="3" fill="none" />
-      {/* Hub */}
-      <circle cx="18" cy="18" r="4.5" fill="#2563EB" />
-      {/* Spokes — 3 spokes like a real steering wheel */}
-      {/* Top spoke */}
-      <line x1="18" y1="13.5" x2="18" y2="5" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" />
-      {/* Bottom-left spoke */}
-      <line x1="14.4" y1="20.5" x2="8.2" y2="28.5" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" />
-      {/* Bottom-right spoke */}
-      <line x1="21.6" y1="20.5" x2="27.8" y2="28.5" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -84,8 +67,14 @@ export default function Navbar() {
 
           {/* ── Logo ── */}
           <Link href="/" className="flex items-center group shrink-0 py-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logos.jpeg" alt="MotoJobs.in" className="h-[68px] sm:h-[74px] w-auto object-contain" />
+            <Image
+              src="/logo-motojobs.png"
+              alt="MotoJobs.in"
+              width={1341}
+              height={268}
+              preload
+              className="h-9 sm:h-10 w-auto"
+            />
           </Link>
 
           {/* ── Desktop Nav ── */}

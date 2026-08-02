@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
 /* ── Social icons ─────────────────────────────────────────────── */
@@ -64,8 +65,13 @@ const LEGAL_LINKS: [string, string][] = [
 function FooterLogo() {
   return (
     <Link href="/" className="inline-flex items-center mb-5">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logos.jpeg" alt="MotoJobs.in" className="h-[70px] sm:h-[76px] w-auto object-contain" />
+      <Image
+        src="/logo-motojobs.png"
+        alt="MotoJobs.in"
+        width={1341}
+        height={268}
+        className="h-10 w-auto"
+      />
     </Link>
   );
 }
