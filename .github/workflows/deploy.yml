@@ -12,7 +12,6 @@ concurrency:
 env:
   AWS_REGION: ap-south-1
   ECR_REPOSITORY: motojobs
-  SERVICE_NAME: motojobs
 
 permissions:
   id-token: write
@@ -48,13 +47,10 @@ jobs:
 
       - name: Deploy to App Runner
         run: |
-          SERVICE_ARN=$(aws apprunner list-services --region "$AWS_REGION" \
-            --query "ServiceSummaryList[?ServiceName=='$SERVICE_NAME'].ServiceArn" \
-            --output text)
-          if [ -z "$SERVICE_ARN" ]; then
-            echo "::error::App Runner service '$SERVICE_NAME' not found. Create it once before the first deploy."
-            exit 1
-          fi
+          # The ARN is hardcoded rather than resolved via list-services: that
+          # call cannot be scoped to a resource, so granting it would widen the
+          # deploy role to every App Runner service in the account.
+          SERVICE_ARN="arn:aws:apprunner:ap-south-1:298713973792:service/motojobs/a629e4857f074d7c904b26e1f7ca3a99"
 
           # update-service REPLACES SourceConfiguration wholesale — it does not
           # merge. Omitting the env block here wipes every variable and secret
