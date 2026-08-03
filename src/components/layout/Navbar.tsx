@@ -212,16 +212,19 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/login"
-                    className="px-5 py-2.5 text-[13.5px] font-semibold text-slate-700 hover:text-[#1F5D95] border border-slate-200 hover:border-[#1F5D95]/40 rounded-xl bg-white hover:bg-blue-50/50 transition-all duration-200"
+                    className="flex items-center gap-1.5 px-4 py-2.5 text-[13.5px] font-semibold text-[#0F172A] hover:text-[#2563EB] bg-[#F8FAFC] hover:bg-[#EFF6FF] border border-[#E2E8F0] hover:border-[#BFDBFE] rounded-[12px] transition-all duration-200 shadow-sm"
                   >
+                    <User className="w-3.5 h-3.5 text-[#64748B] group-hover:text-[#2563EB]" />
                     Log in
                   </Link>
                   <Link
                     href="/register"
-                    className="flex items-center gap-2 px-5 py-2.5 text-[13.5px] font-semibold text-white bg-gradient-to-r from-[#1F5D95] to-[#0F4C81] hover:from-[#2265a3] hover:to-[#1F5D95] rounded-xl shadow-[0_2px_12px_rgba(15,76,129,0.35)] hover:shadow-[0_4px_16px_rgba(15,76,129,0.40)] transition-all duration-200 active:scale-[0.97]"
+                    className="relative group overflow-hidden flex items-center gap-2 px-5 py-2.5 text-[13.5px] font-bold text-white bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E40AF] hover:from-[#1D4ED8] hover:to-[#1D4ED8] rounded-[12px] shadow-[0_4px_16px_rgba(37,99,235,0.35)] hover:shadow-[0_6px_22px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.97]"
                   >
-                    <Zap className="w-3.5 h-3.5 fill-white" />
-                    Get Started
+                    {/* Subtle shine sweep effect on hover */}
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.2s_infinite]" />
+                    <Zap className="w-4 h-4 fill-white text-white shrink-0 group-hover:scale-110 transition-transform duration-200" />
+                    <span>Get Started</span>
                   </Link>
                 </>
               )}
@@ -318,12 +321,12 @@ export default function Navbar() {
           </nav>
 
           {/* Drawer footer — auth actions */}
-          <div className="px-4 pb-6 pt-4 border-t border-slate-100 space-y-2">
+          <div className="px-4 pb-6 pt-4 border-t border-slate-100 space-y-2.5">
             {user ? (
               <>
                 {/* User info */}
                 <div className="flex items-center gap-3 px-3 py-3 mb-1 bg-slate-50 rounded-xl">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1F5D95] to-[#0A3255] flex items-center justify-center text-[13px] font-bold text-white shadow-inner shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2563EB] to-[#1E40AF] flex items-center justify-center text-[13px] font-bold text-white shadow-inner shrink-0">
                     {initials}
                   </div>
                   <div className="min-w-0">
@@ -335,9 +338,9 @@ export default function Navbar() {
                 <Link
                   href={getDashboardLink()}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 w-full px-4 py-3 text-[14px] font-semibold text-slate-700 hover:text-[#1F5D95] bg-white border border-slate-200 rounded-xl hover:border-[#1F5D95]/30 hover:bg-blue-50/40 transition-all duration-150"
+                  className="flex items-center gap-3 w-full px-4 py-3 text-[14px] font-semibold text-slate-700 hover:text-[#2563EB] bg-white border border-slate-200 rounded-xl hover:border-[#BFDBFE] hover:bg-blue-50/40 transition-all duration-150"
                 >
-                  <LayoutDashboard className="w-4 h-4" />
+                  <LayoutDashboard className="w-4 h-4 text-[#2563EB]" />
                   Dashboard
                 </Link>
 
@@ -354,17 +357,18 @@ export default function Navbar() {
                 <Link
                   href="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-center w-full py-3 text-[14.5px] font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all duration-150"
+                  className="flex items-center justify-center gap-2 w-full py-3 text-[14px] font-semibold text-[#0F172A] hover:text-[#2563EB] bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl hover:bg-[#EFF6FF] hover:border-[#BFDBFE] transition-all duration-150"
                 >
+                  <User className="w-4 h-4 text-[#64748B]" />
                   Log in
                 </Link>
                 <Link
                   href="/register"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full py-3 text-[14.5px] font-semibold text-white bg-gradient-to-r from-[#1F5D95] to-[#0F4C81] rounded-xl shadow-[0_4px_14px_rgba(15,76,129,0.35)] hover:shadow-[0_6px_18px_rgba(15,76,129,0.40)] transition-all duration-200 active:scale-[0.97]"
+                  className="flex items-center justify-center gap-2 w-full py-3 text-[14px] font-bold text-white bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E40AF] rounded-xl shadow-[0_4px_16px_rgba(37,99,235,0.35)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.45)] transition-all duration-200 active:scale-[0.97]"
                 >
-                  <Zap className="w-4 h-4 fill-white" />
-                  Get Started — It's Free
+                  <Zap className="w-4 h-4 fill-white text-white" />
+                  Get Started — It&apos;s Free
                 </Link>
               </>
             )}
@@ -381,6 +385,9 @@ export default function Navbar() {
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateX(14px); }
           to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
         }
       `}</style>
     </>
