@@ -164,47 +164,55 @@ export default function BlogPage() {
     <div className="min-h-screen" style={{ background: '#F7F9FC' }}>
 
       {/* ══════════════════════════════════════
-          HERO SECTION — white bg
+          HERO SECTION — dark navy (same as Jobs & Contact Us)
       ══════════════════════════════════════ */}
-      <section className="bg-white border-b border-[#F1F5F9]">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 pt-14 pb-8">
-          <h1 className="text-[42px] sm:text-[52px] lg:text-[56px] font-bold text-[#0F172A] leading-[1.1] tracking-tight max-w-3xl mb-4">
+      <section
+        className="relative overflow-hidden"
+        style={{ background: '#0F2D58', minHeight: 265 }}
+      >
+        <Image
+          src="/hero-car.png" alt="Automotive workshop background" fill
+          className="object-cover object-center select-none"
+          style={{ opacity: 0.25 }} priority
+        />
+        {/* Dark left-heavy gradient overlay */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(100deg,rgba(10,29,60,0.96) 40%,rgba(15,45,88,0.72) 100%)' }}
+        />
+
+        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 pt-10 pb-8">
+          <h1 className="text-[32px] sm:text-[40px] lg:text-[44px] font-bold text-white leading-[1.15] tracking-tight mb-3 max-w-2xl">
             Career advice for the auto trade
           </h1>
-          <p className="text-[15.5px] text-[#64748B] leading-[1.75] max-w-[700px]">
+          <p className="text-[14px] sm:text-[15px] text-[#93C5FD] leading-[1.7] max-w-[600px] mb-7 font-medium">
             Interview prep, resume tips and hiring guides — written for people who work in
             dealerships, workshops, OEMs and EV companies.
           </p>
-        </div>
-      </section>
 
-      {/* ══════════════════════════════════════
-          SEARCH + CATEGORY PILLS
-      ══════════════════════════════════════ */}
-      <div className="bg-white border-b border-[#F1F5F9]">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 py-4">
-          <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+          {/* Search + category pills inside hero */}
+          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
             {/* Search box */}
-            <div className="relative shrink-0 w-full sm:w-[420px]">
+            <div className="relative shrink-0 w-full sm:w-[380px]">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search Career Advice..."
-                className="w-full h-[48px] pl-10 pr-4 border border-[#E5E7EB] rounded-[12px] text-[14px] text-[#0F172A] placeholder-[#94A3B8] bg-white outline-none shadow-[0_1px_4px_rgba(15,23,42,0.06)] hover:border-[#CBD5E1] focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] transition-all duration-200"
+                className="w-full h-[48px] pl-10 pr-4 border border-white/20 rounded-[12px] text-[14px] text-[#0F172A] placeholder-[#94A3B8] bg-white outline-none shadow-[0_2px_12px_rgba(10,29,60,0.20)] hover:border-white/40 focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.15)] transition-all duration-200"
               />
             </div>
 
-            {/* Scrollable pills */}
+            {/* Scrollable category pills */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5 flex-1">
               {CATEGORIES.map(cat => (
                 <button
                   key={cat}
                   onClick={() => setActiveTag(cat)}
-                  className={`shrink-0 px-4 py-[7px] rounded-full text-[13px] font-semibold border transition-all duration-200 whitespace-nowrap ${
+                  className={`shrink-0 px-4 py-[6px] rounded-full text-[13px] font-semibold border transition-all duration-200 whitespace-nowrap ${
                     activeTag === cat
-                      ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-[0_2px_8px_rgba(37,99,235,0.25)]'
-                      : 'bg-white text-[#475569] border-[#E5E7EB] hover:border-[#2563EB] hover:text-[#2563EB]'
+                      ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-[0_2px_8px_rgba(37,99,235,0.35)]'
+                      : 'bg-white/10 text-white border-white/25 hover:bg-white/20 hover:border-white/50'
                   }`}
                 >
                   {cat}
@@ -213,7 +221,7 @@ export default function BlogPage() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* ══════════════════════════════════════
           MAIN CONTENT
