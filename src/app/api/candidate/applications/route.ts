@@ -17,9 +17,20 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(new URL(req.url).searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
 
+    // `?status=INTERVIEW,SHORTLISTED` powers the Interviews page, which is just
+    // a filtered view of applications rather than a model of its own.
+    const statusParam = new URL(req.url).searchParams.get("status");
+    const statuses = statusParam
+      ? statusParam.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
+      : [];
+    const where = {
+      candidateId: candidate.id,
+      ...(statuses.length ? { status: { in: statuses } } : {}),
+    };
+
     const [applications, total] = await Promise.all([
       prisma.application.findMany({
-        where: { candidateId: candidate.id },
+        where,
         skip,
         take: limit,
         orderBy: { appliedAt: "desc" },
@@ -33,7 +44,7 @@ export async function GET(req: NextRequest) {
           resume: { select: { title: true } },
         },
       }),
-      prisma.application.count({ where: { candidateId: candidate.id } }),
+      prisma.application.count({ where }),
     ]);
 
     return NextResponse.json({

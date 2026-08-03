@@ -35,8 +35,7 @@ function YouTubeIcon() {
 const JOB_SEEKER_LINKS: [string, string][] = [
   ['Browse Jobs', '/jobs'],
   ['Create Profile', '/register?role=candidate'],
-  ['Job Alerts', '/candidate/alerts'],
-  ['Resume Builder', '/candidate/resume'],
+  ['Companies', '/companies'],
   ['Career Advice', '/blog'],
 ];
 

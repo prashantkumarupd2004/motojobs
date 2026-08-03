@@ -55,7 +55,8 @@ function VerifyEmailForm() {
             ? '/recruiter/dashboard'
             : role === 'ADMIN'
               ? '/admin/dashboard'
-              : '/candidate/dashboard';
+              : // A new candidate has no profile yet — start the wizard, not the dashboard.
+                '/candidate/onboarding';
         setTimeout(() => router.push(dest), 1400);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Verification failed');

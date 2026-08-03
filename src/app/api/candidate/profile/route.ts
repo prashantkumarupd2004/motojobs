@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
+import { AUTOMOTIVE_SKILLS, CATEGORY_BY_JOB_TITLE, STEP_COMPLETION } from "@/lib/automotive";
+import { profileUpdateSchema } from "@/lib/validation/candidate";
+
+const SKILL_CATEGORY = new Map(AUTOMOTIVE_SKILLS.map((s) => [s.name, s.category]));
+
+/** SQLite has no list type — arrays are persisted as JSON strings. */
+const packList = (v?: string[]) => (v && v.length ? JSON.stringify(v) : null);
+
+const unpack = (v: string | null): string[] => {
+  if (!v) return [];
+  try {
+    const parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,8 +43,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Candidate profile not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ data: candidate });
+    return NextResponse.json({
+      data: {
+        ...candidate,
+        preferredLocations: unpack(candidate.preferredLocations),
+        brandExperience: unpack(candidate.brandExperience),
+        languages: unpack(candidate.languages),
+        jobCategories: unpack(candidate.jobCategories),
+        jobTitles: unpack(candidate.jobTitles),
+        skills: candidate.skills.map((s) => s.skill.name),
+      },
+    });
   } catch (error) {
+    console.error("Profile fetch error:", error);
     return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
   }
 }
@@ -38,116 +67,115 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const {
-      name, phone, headline, summary, location, experience,
-      currentSalary, expectedSalary, noticePeriod, isOpenToWork,
-      linkedinUrl, githubUrl, portfolioUrl, profileImage,
-      education, workExperience, skills,
-    } = body;
+    const body = profileUpdateSchema.parse(await req.json());
 
-    // Update user info
-    await prisma.user.update({
-      where: { id: user.userId },
-      data: { name, phone, profileImage },
+    const candidate = await prisma.candidate.findUnique({
+      where: { userId: user.userId },
+      select: { id: true, isProfileComplete: true, profileStep: true },
     });
-
-    const candidate = await prisma.candidate.findUnique({ where: { userId: user.userId } });
     if (!candidate) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Update candidate profile
+    if (body.fullName || body.phone || body.profileImage) {
+      await prisma.user.update({
+        where: { id: user.userId },
+        data: {
+          ...(body.fullName ? { name: body.fullName } : {}),
+          ...(body.phone ? { phone: body.phone } : {}),
+          ...(body.profileImage ? { profileImage: body.profileImage } : {}),
+        },
+      });
+    }
+
+    const set = <T,>(v: T) => (v === undefined ? undefined : v);
     const updated = await prisma.candidate.update({
       where: { userId: user.userId },
       data: {
-        headline, summary, location,
-        experience: experience ? parseInt(experience) : undefined,
-        currentSalary: currentSalary ? parseFloat(currentSalary) : undefined,
-        expectedSalary: expectedSalary ? parseFloat(expectedSalary) : undefined,
-        noticePeriod: noticePeriod ? parseInt(noticePeriod) : undefined,
-        isOpenToWork,
-        linkedinUrl, githubUrl, portfolioUrl,
+        headline: set(body.headline),
+        summary: set(body.summary),
+        dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
+        gender: set(body.gender),
+        currentState: set(body.currentState),
+        currentCity: set(body.currentCity),
+        location: set(body.currentCity),
+        panNumber: set(body.panNumber),
+        panCardUrl: set(body.panCardUrl),
+
+        candidateType: set(body.candidateType),
+        qualification: set(body.qualification),
+        passingYear: set(body.passingYear),
+        college: set(body.college),
+        totalExperience: set(body.totalExperience),
+        currentCompany: set(body.currentCompany),
+        currentDesignation: set(body.currentDesignation),
+        currentSalary: set(body.currentSalary),
+        noticePeriodBand: set(body.noticePeriodBand),
+        industry: set(body.industry),
+        drivingLicense: set(body.drivingLicense),
+        ownVehicle: set(body.ownVehicle),
+
+        jobTitles: body.jobTitles ? packList(body.jobTitles) : undefined,
+        // Jobs are tagged by category, so titles always write both.
+        jobCategories: body.jobTitles
+          ? packList([
+              ...new Set(
+                body.jobTitles.map((t) => CATEGORY_BY_JOB_TITLE[t]).filter(Boolean)
+              ),
+            ])
+          : undefined,
+        brandExperience: body.brandExperience ? packList(body.brandExperience) : undefined,
+
+        resumeUrl: set(body.resumeUrl),
+        resumeName: set(body.resumeName),
+
+        interestedRole: set(body.interestedRole),
+        preferredRole: set(body.interestedRole),
+        preferredBrand: set(body.preferredBrand),
+        preferredState: set(body.preferredState),
+        preferredCity: set(body.preferredCity),
+        employmentType: set(body.employmentType),
+        expectedSalary: set(body.expectedSalary),
+        languages: body.languages ? packList(body.languages) : undefined,
+        preferredLocations: body.preferredLocations
+          ? packList(body.preferredLocations)
+          : undefined,
+        isOpenToWork: set(body.isOpenToWork),
+
+        // Completion is owned by the onboarding step model. Editing the profile
+        // must never recompute — and silently lower — a finished profile.
+        profileScore: candidate.isProfileComplete
+          ? STEP_COMPLETION[STEP_COMPLETION.length - 1]
+          : STEP_COMPLETION[candidate.profileStep] ?? 0,
       },
     });
 
-    // Update education
-    if (education && Array.isArray(education)) {
-      await prisma.education.deleteMany({ where: { candidateId: candidate.id } });
-      if (education.length > 0) {
-        await prisma.education.createMany({
-          data: education.map((e: any) => ({
-            candidateId: candidate.id,
-            degree: String(e.degree),
-            institution: String(e.institution),
-            field: e.field ? String(e.field) : null,
-            startYear: parseInt(e.startYear),
-            endYear: e.endYear ? parseInt(e.endYear) : null,
-            grade: e.grade ? String(e.grade) : null,
-          })),
-        });
-      }
-    }
-
-    // Update work experience
-    if (workExperience && Array.isArray(workExperience)) {
-      await prisma.workExperience.deleteMany({ where: { candidateId: candidate.id } });
-      if (workExperience.length > 0) {
-        await prisma.workExperience.createMany({
-          data: workExperience.map((e: any) => ({
-            candidateId: candidate.id,
-            title: String(e.title),
-            company: String(e.company),
-            location: e.location ? String(e.location) : null,
-            startDate: new Date(e.startDate),
-            endDate: e.endDate ? new Date(e.endDate) : null,
-            isCurrent: Boolean(e.isCurrent),
-            description: e.description ? String(e.description) : null,
-          })),
-        });
-      }
-    }
-
-    // Update skills
-    if (skills && Array.isArray(skills)) {
+    if (body.skills) {
       await prisma.candidateSkill.deleteMany({ where: { candidateId: candidate.id } });
-      for (const skillData of skills) {
-        let skill = await prisma.skill.findFirst({ where: { name: { equals: skillData.name } } });
-        if (!skill) {
-          skill = await prisma.skill.create({ data: { name: skillData.name, category: skillData.category } });
-        }
+      for (const name of body.skills) {
+        const skill =
+          (await prisma.skill.findFirst({ where: { name } })) ??
+          (await prisma.skill.create({
+            data: { name, category: SKILL_CATEGORY.get(name) ?? null },
+          }));
         await prisma.candidateSkill.create({
-          data: { candidateId: candidate.id, skillId: skill.id, level: skillData.level, yearsExp: skillData.yearsExp },
+          data: { candidateId: candidate.id, skillId: skill.id },
         });
       }
     }
 
-    // Calculate profile score
-    const score = calculateProfileScore(updated, education, workExperience, skills);
-    await prisma.candidate.update({ where: { id: candidate.id }, data: { profileScore: score } });
-
-    return NextResponse.json({ data: { ...updated, profileScore: score }, message: "Profile updated successfully" });
+    return NextResponse.json({ data: updated, message: "Profile updated successfully" });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of error.issues) {
+        const key = String(issue.path[0] ?? "form");
+        if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+      }
+      return NextResponse.json(
+        { error: error.issues[0]?.message ?? "Invalid details", fieldErrors },
+        { status: 400 }
+      );
+    }
     console.error("Profile update error:", error);
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
   }
-}
-
-function calculateProfileScore(
-  candidate: Record<string, unknown>,
-  education: unknown[],
-  workExperience: unknown[],
-  skills: unknown[]
-): number {
-  let score = 0;
-  if (candidate.headline) score += 10;
-  if (candidate.summary) score += 15;
-  if (candidate.location) score += 5;
-  if (candidate.experience !== undefined) score += 5;
-  if (candidate.linkedinUrl) score += 5;
-  if (candidate.githubUrl) score += 5;
-  if (candidate.portfolioUrl) score += 5;
-  if (education && education.length > 0) score += 15;
-  if (workExperience && workExperience.length > 0) score += 20;
-  if (skills && skills.length >= 5) score += 15;
-  else if (skills && skills.length > 0) score += 10;
-  return Math.min(score, 100);
 }

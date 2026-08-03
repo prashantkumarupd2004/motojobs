@@ -24,6 +24,47 @@ export const JOB_CATEGORIES = [
 
 export type CategoryId = (typeof JOB_CATEGORIES)[number]['id'];
 
+/**
+ * The job titles candidates pick from during onboarding. Each maps to the
+ * broader category jobs are actually tagged with, so a candidate chooses a
+ * concrete title while matching still works against `Job.category`.
+ */
+export const JOB_TITLES: Array<{ title: string; category: CategoryId }> = [
+  { title: 'Sales Executive', category: 'sales' },
+  { title: 'Sales Consultant', category: 'sales' },
+  { title: 'Relationship Manager', category: 'sales' },
+  { title: 'Service Advisor', category: 'service' },
+  { title: 'Workshop Manager', category: 'service' },
+  { title: 'Service Manager', category: 'service' },
+  { title: 'Technician', category: 'service' },
+  { title: 'Senior Technician', category: 'service' },
+  { title: 'Mechanic', category: 'service' },
+  { title: 'EV Technician', category: 'ev' },
+  { title: 'Electrician', category: 'ev' },
+  { title: 'Body Shop Technician', category: 'body-shop' },
+  { title: 'Denting Technician', category: 'body-shop' },
+  { title: 'Painting Technician', category: 'body-shop' },
+  { title: 'Driver', category: 'logistics' },
+  { title: 'Spare Parts Executive', category: 'spare-parts' },
+  { title: 'Parts Manager', category: 'spare-parts' },
+  { title: 'Warranty Executive', category: 'service' },
+  { title: 'CRM Executive', category: 'crm' },
+  { title: 'Customer Support', category: 'crm' },
+  { title: 'Finance Executive', category: 'finance' },
+  { title: 'Insurance Executive', category: 'finance' },
+  { title: 'HR Executive', category: 'support' },
+  { title: 'Accounts Executive', category: 'support' },
+  { title: 'Marketing Executive', category: 'sales' },
+  { title: 'Production Executive', category: 'manufacturing' },
+  { title: 'Purchase Executive', category: 'manufacturing' },
+  { title: 'Store Keeper', category: 'spare-parts' },
+  { title: 'Quality Inspector', category: 'manufacturing' },
+];
+
+export const CATEGORY_BY_JOB_TITLE: Record<string, CategoryId> = Object.fromEntries(
+  JOB_TITLES.map((t) => [t.title, t.category])
+);
+
 export const ROLES_BY_CATEGORY: Record<CategoryId, string[]> = {
   sales: [
     'Sales Consultant',

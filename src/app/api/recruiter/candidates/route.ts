@@ -74,3 +74,48 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch candidates" }, { status: 500 });
   }
 }
+
+/**
+ * Records that this recruiter opened a candidate's profile, which is what the
+ * candidate's "Profile Views" card counts. Appearing in a search listing is
+ * deliberately not a view — only an intentional open is.
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const user = await getAuthUser(req);
+    if (!user || user.role !== "RECRUITER") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { candidateId } = await req.json();
+    if (typeof candidateId !== "string" || !candidateId) {
+      return NextResponse.json({ error: "candidateId is required" }, { status: 400 });
+    }
+
+    const recruiter = await prisma.recruiter.findUnique({
+      where: { userId: user.userId },
+      select: { id: true },
+    });
+    const candidate = await prisma.candidate.findUnique({
+      where: { id: candidateId },
+      select: { id: true },
+    });
+    if (!candidate) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // One view per recruiter per day, so refreshing a tab cannot inflate the count.
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const existing = await prisma.profileView.findFirst({
+      where: { candidateId, recruiterId: recruiter?.id ?? null, viewedAt: { gte: since } },
+      select: { id: true },
+    });
+    if (!existing) {
+      await prisma.profileView.create({
+        data: { candidateId, recruiterId: recruiter?.id ?? null },
+      });
+    }
+
+    return NextResponse.json({ recorded: !existing });
+  } catch {
+    return NextResponse.json({ error: "Failed to record view" }, { status: 500 });
+  }
+}

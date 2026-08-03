@@ -164,6 +164,8 @@ model Candidate {
 
   /// JSON string array of JOB_CATEGORIES ids.
   jobCategories String?
+  /// JSON string array of JOB_TITLES the candidate selected in onboarding.
+  jobTitles     String?
 
   // Fresher branch
   passingYear    Int?
@@ -205,15 +207,27 @@ model Candidate {
   resumes        Resume[]
   applications   Application[]
   savedJobs      SavedJob[]
-  jobAlerts      JobAlert[]
   skills         CandidateSkill[]
-  assessments    AssessmentResult[]
   ratings        CandidateRating[]
   verification   CandidateVerification?
   education      Education[]
   workExperience WorkExperience[]
+  profileViews   ProfileView[]
 
   @@map("candidates")
+}
+
+/// One row per recruiter viewing a candidate, so the dashboard count is real.
+model ProfileView {
+  id          String   @id @default(cuid())
+  candidateId String
+  recruiterId String?
+  viewedAt    DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, viewedAt])
+  @@map("profile_views")
 }
 
 model Education {
@@ -349,7 +363,6 @@ model Job {
   company      Company?      @relation(fields: [companyId], references: [id])
   applications Application[]
   savedJobs    SavedJob[]
-  jobAlerts    JobAlert[]
 
   @@map("jobs")
 }
@@ -420,53 +433,8 @@ model CandidateSkill {
   @@map("candidate_skills")
 }
 
-model Assessment {
-  id           String   @id @default(cuid())
-  title        String
-  category     String
-  description  String?
-  questions    String // Array of questions
-  duration     Int // minutes
-  passingScore Int      @default(70)
-  createdAt    DateTime @default(now())
 
-  results AssessmentResult[]
 
-  @@map("assessments")
-}
-
-model AssessmentResult {
-  id           String   @id @default(cuid())
-  candidateId  String
-  assessmentId String
-  score        Int
-  isPassed     Boolean
-  answers      String?
-  completedAt  DateTime @default(now())
-
-  candidate  Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  assessment Assessment @relation(fields: [assessmentId], references: [id])
-
-  @@map("assessment_results")
-}
-
-model JobAlert {
-  id          String   @id @default(cuid())
-  candidateId String
-  jobId       String?
-  keywords    String   @default("[]")
-  location    String?
-  jobType     String?
-  minSalary   Float?
-  frequency   String   @default("daily") // daily, weekly
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-
-  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  job       Job?      @relation(fields: [jobId], references: [id])
-
-  @@map("job_alerts")
-}
 
 model SavedJob {
   id          String   @id @default(cuid())

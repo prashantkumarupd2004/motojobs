@@ -7,7 +7,7 @@ import {
   INDIAN_STATES,
   INDUSTRIES,
   INTERESTED_ROLES,
-  JOB_CATEGORIES,
+  JOB_TITLES,
   JOB_TYPES,
   LANGUAGES,
   NOTICE_PERIODS,
@@ -28,7 +28,7 @@ import {
  */
 
 const candidateTypeIds = CANDIDATE_TYPES.map((t) => t.id) as [string, ...string[]];
-const categoryIds = JOB_CATEGORIES.map((c) => c.id);
+const jobTitleNames = JOB_TITLES.map((t) => t.title);
 const skillNames = AUTOMOTIVE_SKILLS.map((s) => s.name);
 
 const oneOf = (values: readonly string[], message: string) =>
@@ -113,12 +113,12 @@ const professionalShape = {
   ownVehicle: z.boolean(),
 };
 
-// Step 3 — Job categories
+// Step 3 — Job titles the candidate wants
 const categoriesShape = {
-  jobCategories: z
-    .array(oneOf(categoryIds, "Unknown category"))
-    .min(1, "Pick at least one job category")
-    .max(6, "Pick up to 6 categories"),
+  jobTitles: z
+    .array(oneOf(jobTitleNames, "Unknown job title"))
+    .min(1, "Pick at least one job title")
+    .max(8, "Pick up to 8 job titles"),
 };
 
 // Step 4 — Skills
@@ -240,6 +240,26 @@ export const onboardingDraftSchema = z
   .partial();
 
 export type OnboardingDraft = z.infer<typeof onboardingDraftSchema>;
+
+/**
+ * My Profile edits. Same field vocabulary as onboarding but every key is
+ * optional, since each profile section saves on its own.
+ */
+export const profileUpdateSchema = z
+  .object({
+    ...personalShape,
+    ...professionalShape,
+    ...categoriesShape,
+    ...skillsShape,
+    ...resumeShape,
+    ...preferencesShape,
+    headline: optionalText(140),
+    summary: optionalText(2000),
+    isOpenToWork: z.boolean(),
+  })
+  .partial();
+
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
 /** Cities offered in the dropdown; free text is still permitted. */
 export const CITY_OPTIONS = AUTO_HUB_CITIES;

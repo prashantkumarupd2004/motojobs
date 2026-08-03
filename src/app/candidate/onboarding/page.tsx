@@ -311,7 +311,7 @@ function hydrate(base: WizardState, d: Record<string, unknown>): WizardState {
     drivingLicense: typeof d.drivingLicense === 'boolean' ? d.drivingLicense : null,
     ownVehicle: typeof d.ownVehicle === 'boolean' ? d.ownVehicle : null,
 
-    jobCategories: list(d.jobCategories),
+    jobTitles: list(d.jobTitles),
     brandExperience: list(d.brandExperience),
     skills: list(d.skills),
 

@@ -11,7 +11,6 @@ const NAV_LINKS: [string, string][] = [
   ['Home',            '/'],
   ['Jobs',            '/jobs'],
   ['Companies',       '/companies'],
-  ['Resume Services', '/candidate/resume'],
   ['Career Advice',   '/blog'],
   ['Contact Us',      '/contact'],
 ];

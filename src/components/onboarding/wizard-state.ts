@@ -37,7 +37,7 @@ export interface WizardState {
   ownVehicle: boolean | null;
 
   // Step 3 — categories
-  jobCategories: string[];
+  jobTitles: string[];
 
   // Step 4 — skills
   brandExperience: string[];
@@ -99,7 +99,7 @@ export const INITIAL_STATE: WizardState = {
   drivingLicense: null,
   ownVehicle: null,
 
-  jobCategories: [],
+  jobTitles: [],
 
   brandExperience: [],
   skills: [],
@@ -165,7 +165,7 @@ export function stepPayload(step: number, s: WizardState): Record<string, unknow
         ownVehicle: s.ownVehicle ?? false,
       };
     case 3:
-      return { jobCategories: s.jobCategories };
+      return { jobTitles: s.jobTitles };
     case 4:
       return {
         brandExperience: s.brandExperience,

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 import { limitBy, LIMITS } from "@/lib/rate-limit";
-import { AUTOMOTIVE_SKILLS, STEP_COMPLETION } from "@/lib/automotive";
+import { AUTOMOTIVE_SKILLS, CATEGORY_BY_JOB_TITLE, STEP_COMPLETION } from "@/lib/automotive";
 import {
   onboardingDraftSchema,
   onboardingSchema,
@@ -72,7 +72,15 @@ function toCandidateFields(d: OnboardingDraft) {
     fields.industry = d.candidateType === "NON_AUTOMOBILE" ? (d.industry ?? null) : null;
   }
 
-  set("jobCategories", d.jobCategories && packList(d.jobCategories));
+  // Job postings are tagged by category, so titles are stored alongside the
+  // categories they roll up to — matching reads the latter.
+  if (d.jobTitles !== undefined) {
+    fields.jobTitles = packList(d.jobTitles);
+    const categories = [
+      ...new Set(d.jobTitles.map((t) => CATEGORY_BY_JOB_TITLE[t]).filter(Boolean)),
+    ];
+    fields.jobCategories = packList(categories);
+  }
   set("brandExperience", d.brandExperience && packList(d.brandExperience));
 
   set("resumeUrl", d.resumeUrl);
@@ -258,6 +266,7 @@ export async function GET(req: NextRequest) {
       brandExperience: unpack(candidate.brandExperience),
       languages: unpack(candidate.languages),
       jobCategories: unpack(candidate.jobCategories),
+      jobTitles: unpack(candidate.jobTitles),
       skills: candidate.skills.map((s) => s.skill.name),
     },
   });
