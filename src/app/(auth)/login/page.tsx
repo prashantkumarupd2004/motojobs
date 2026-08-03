@@ -60,16 +60,26 @@ function LoginForm() {
 
   return (
     <>
-      <h1 className="text-center text-[32px] sm:text-[34px] font-bold text-[#0F172A] tracking-[-0.035em] leading-[1.15]">
-        Welcome Back
-      </h1>
-      <p className="mt-2.5 text-center text-[#475569] text-[15px]">
-        {role === 'RECRUITER'
-          ? 'Login to your employer account to continue'
-          : 'Login to your account to continue'}
-      </p>
+      {/* ── Heading ── */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-1.5 bg-[#EFF6FF] border border-[#DBEAFE] rounded-full px-3 py-1 mb-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
+          <span className="text-[11.5px] font-semibold text-[#2563EB] tracking-wide uppercase">
+            {role === 'RECRUITER' ? 'Employer Portal' : 'Job Seeker Portal'}
+          </span>
+        </div>
+        <h1 className="text-[28px] sm:text-[32px] font-bold tracking-tight leading-[1.2]"
+          style={{ color: '#0F172A' }}>
+          Welcome back 👋
+        </h1>
+        <p className="mt-2 text-[14px] text-[#64748B] leading-relaxed">
+          {role === 'RECRUITER'
+            ? 'Sign in to your employer account'
+            : 'Sign in to continue your job search'}
+        </p>
+      </div>
 
-      <div className="mt-8">
+      <div className="mb-6">
         <RoleTabs value={role} onChange={setRole} />
       </div>
 
@@ -116,27 +126,15 @@ function LoginForm() {
 
         <div className="pt-1">
           <SubmitButton loading={loading} disabled={!email || !password} loadingLabel="Signing in…">
-            Login
+            Sign In
           </SubmitButton>
         </div>
       </form>
 
-      <div className="mt-8 flex items-center gap-4">
-        <span className="flex-1 h-px bg-[#E2E8F0]" />
-        <span className="text-[13px] text-[#94A3B8]">or</span>
-        <span className="flex-1 h-px bg-[#E2E8F0]" />
-      </div>
-
-      <p className="mt-6 text-center text-[12.5px] text-[#64748B] leading-[1.7]">
-        By continuing, you agree to our{' '}
-        <Link href="/terms" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
-          Terms &amp; Conditions
-        </Link>{' '}
-        and{' '}
-        <Link href="/privacy" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
-          Privacy Policy
-        </Link>
-        .
+      <p className="mt-6 text-center text-[12px] text-[#94A3B8] leading-relaxed">
+        By signing in you agree to our{' '}
+        <Link href="/terms" className="text-[#2563EB] font-semibold hover:underline">Terms</Link>{' '}&amp;{' '}
+        <Link href="/privacy" className="text-[#2563EB] font-semibold hover:underline">Privacy Policy</Link>.
       </p>
     </>
   );

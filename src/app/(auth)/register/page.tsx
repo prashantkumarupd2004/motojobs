@@ -108,14 +108,25 @@ function RegisterForm() {
 
   return (
     <>
-      <h1 className="text-center text-[32px] sm:text-[34px] font-bold text-[#0F172A] tracking-[-0.035em] leading-[1.15]">
-        Create Your Account
-      </h1>
-      <p className="mt-2.5 text-center text-[#475569] text-[15px]">
-        Join MotoJobs.in and start your journey today
-      </p>
+      {/* ── Heading ── */}
+      <div className="text-center mb-7">
+        <div className="inline-flex items-center gap-1.5 bg-[#ECFDF5] border border-[#A7F3D0] rounded-full px-3 py-1 mb-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+          <span className="text-[11.5px] font-semibold text-[#059669] tracking-wide uppercase">
+            {isEmployer ? 'Post Jobs Free' : '100% Free to Join'}
+          </span>
+        </div>
+        <h1 className="text-[26px] sm:text-[30px] font-bold tracking-tight leading-[1.2] text-[#0F172A]">
+          {isEmployer ? 'Create Employer Account' : 'Start Your Journey 🚀'}
+        </h1>
+        <p className="mt-2 text-[13.5px] text-[#64748B] leading-relaxed">
+          {isEmployer
+            ? 'Post jobs and connect with top automotive talent'
+            : 'Join MotoJobs and find your dream automotive career'}
+        </p>
+      </div>
 
-      <div className="mt-8">
+      <div className="mb-6">
         <RoleTabs value={role} onChange={switchRole} />
       </div>
 
