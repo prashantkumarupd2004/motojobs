@@ -168,73 +168,82 @@ const STATS = [
 ];
 
 const CATEGORIES = [
-  { id: 'sales',       label: 'Sales & Marketing',   count: '1,250', Icon: SalesMarketingIcon },
-  { id: 'service',     label: 'Service & Support',   count: '1,150', Icon: ServiceSupportIcon },
-  { id: 'technician',  label: 'Technicians',         count: '950',   Icon: TechnicianCatIcon },
-  { id: 'engineering', label: 'Engineering',         count: '750',   Icon: EngineeringCatIcon },
-  { id: 'body-shop',   label: 'Body Shop',           count: '450',   Icon: BodyShopCatIcon },
-  { id: 'parts',       label: 'Parts & Accessories', count: '400',   Icon: PartsCatIcon },
-  { id: 'management',  label: 'Management',          count: '300',   Icon: ManagementCatIcon },
-  { id: 'others',      label: 'Others',              count: '800',   Icon: OthersCatIcon },
+  { id: 'sales',       label: 'Sales & Marketing',   count: '1,250', Icon: SalesMarketingIcon,  accent: '#3B82F6' },
+  { id: 'service',     label: 'Service & Support',   count: '1,150', Icon: ServiceSupportIcon,  accent: '#10B981' },
+  { id: 'technician',  label: 'Technicians',         count: '950',   Icon: TechnicianCatIcon,   accent: '#F59E0B' },
+  { id: 'engineering', label: 'Engineering',         count: '750',   Icon: EngineeringCatIcon,  accent: '#8B5CF6' },
+  { id: 'body-shop',   label: 'Body Shop',           count: '450',   Icon: BodyShopCatIcon,     accent: '#EF4444' },
+  { id: 'parts',       label: 'Parts & Accessories', count: '400',   Icon: PartsCatIcon,        accent: '#0EA5E9' },
+  { id: 'management',  label: 'Management',          count: '300',   Icon: ManagementCatIcon,   accent: '#EC4899' },
+  { id: 'others',      label: 'Others',              count: '800',   Icon: OthersCatIcon,       accent: '#64748B' },
 ];
 
 const RECENT_JOBS = [
   {
-    id: '1',
-    title: 'Service Advisor',
-    company: 'Tata Motors',
-    companyShort: 'TM',
-    logoColor: '#1D4ED8',
-    logoBg: '#EFF6FF',
-    location: 'Mumbai, Maharashtra',
-    experience: '2-4 Yrs',
-    salary: '₹ 3-5 LPA',
-    type: 'Full Time',
-    posted: '2h ago',
+    id: '1', title: 'Service Advisor',
+    company: 'Tata Motors', companyShort: 'TM',
+    logoColor: '#1D4ED8', logoBg: '#EFF6FF',
+    location: 'Mumbai, Maharashtra', experience: '2-4 Yrs',
+    salary: '₹ 3-5 LPA', type: 'Full Time', posted: '2h ago', hot: true,
   },
   {
-    id: '2',
-    title: 'Automobile Technician',
-    company: 'Mahindra & Mahindra',
-    companyShort: 'MM',
-    logoColor: '#DC2626',
-    logoBg: '#FEF2F2',
-    location: 'Pune, Maharashtra',
-    experience: '1-3 Yrs',
-    salary: '₹ 2-4 LPA',
-    type: 'Full Time',
-    posted: '5h ago',
+    id: '2', title: 'Automobile Technician',
+    company: 'Mahindra & Mahindra', companyShort: 'MM',
+    logoColor: '#DC2626', logoBg: '#FEF2F2',
+    location: 'Pune, Maharashtra', experience: '1-3 Yrs',
+    salary: '₹ 2-4 LPA', type: 'Full Time', posted: '5h ago', hot: false,
   },
   {
-    id: '3',
-    title: 'Sales Executive',
-    company: 'Maruti Suzuki',
-    companyShort: 'MS',
-    logoColor: '#475569',
-    logoBg: '#F8FAFC',
-    location: 'Delhi, NCR',
-    experience: '0-2 Yrs',
-    salary: '₹ 2.5-4 LPA',
-    type: 'Full Time',
-    posted: '1d ago',
+    id: '3', title: 'Sales Executive – EV Segment',
+    company: 'Ather Energy', companyShort: 'AE',
+    logoColor: '#059669', logoBg: '#ECFDF5',
+    location: 'Bangalore, Karnataka', experience: '0-2 Yrs',
+    salary: '₹ 3-5 LPA', type: 'Full Time', posted: '1d ago', hot: true,
+  },
+  {
+    id: '4', title: 'Workshop Manager',
+    company: 'Maruti Suzuki', companyShort: 'MS',
+    logoColor: '#475569', logoBg: '#F8FAFC',
+    location: 'Delhi, NCR', experience: '5-8 Yrs',
+    salary: '₹ 7-11 LPA', type: 'Full Time', posted: '2d ago', hot: false,
+  },
+  {
+    id: '5', title: 'Auto Electrician',
+    company: 'Hero MotoCorp', companyShort: 'HM',
+    logoColor: '#B91C1C', logoBg: '#FEF2F2',
+    location: 'Jaipur, Rajasthan', experience: '2-5 Yrs',
+    salary: '₹ 2.5-4 LPA', type: 'Full Time', posted: '3d ago', hot: false,
   },
 ];
 
 const JOB_SEEKER_FEATURES = [
   {
     icon: FileText,
-    title: 'Create Professional Resume',
-    sub: 'Build your resume in minutes',
+    title: 'Build your Automotive Resume',
+    sub: 'Tailored templates for dealerships, workshops & OEMs',
+    color: '#3B82F6',
+    bg: '#EFF6FF',
   },
   {
     icon: Bell,
-    title: 'Get Job Alerts',
-    sub: 'Receive relevant job notifications',
+    title: 'Smart Job Alerts',
+    sub: 'Get notified instantly for matching openings near you',
+    color: '#10B981',
+    bg: '#ECFDF5',
   },
   {
     icon: Building2,
-    title: 'Top Companies Hiring',
-    sub: 'Explore leading automotive companies',
+    title: 'Company Profiles',
+    sub: 'Explore ratings, culture & salary data for top employers',
+    color: '#F59E0B',
+    bg: '#FFFBEB',
+  },
+  {
+    icon: Users,
+    title: 'Industry Network',
+    sub: 'Connect with 25,000+ automotive professionals across India',
+    color: '#8B5CF6',
+    bg: '#F5F3FF',
   },
 ];
 
@@ -251,7 +260,20 @@ const COMPANIES = [
 
 const POPULAR_SEARCHES = ['Service Advisor', 'Mechanic', 'Sales Executive', 'BDE', 'Technician'];
 
-// Fades the photo out on every edge so no rectangular boundary shows against the hero gradient.
+const EV_JOBS = [
+  { title: 'EV Technician', company: 'Ather Energy', location: 'Bangalore', salary: '₹ 3.5-6 LPA', tag: 'High Demand' },
+  { title: 'Battery Engineer', company: 'Tata Motors EV', location: 'Pune', salary: '₹ 8-14 LPA', tag: 'Urgent' },
+  { title: 'EV Sales Consultant', company: 'Ola Electric', location: 'Hyderabad', salary: '₹ 3-5 LPA', tag: 'New' },
+  { title: 'Charging Infra Engineer', company: 'TPEM', location: 'Mumbai', salary: '₹ 6-10 LPA', tag: 'Hot' },
+];
+
+const TRUST_ITEMS = [
+  { icon: '🔒', title: 'Verified Employers', desc: 'Every company is manually verified before posting' },
+  { icon: '⚡', title: 'Fast Hiring',        desc: 'Average time-to-hire of just 7 days on MotoJobs' },
+  { icon: '🎯', title: 'Niche Focused',      desc: '100% automotive — zero noise from unrelated sectors' },
+  { icon: '📱', title: 'Mobile Ready',       desc: 'Apply on-the-go from any device, anytime' },
+];
+
 const HERO_IMAGE_MASK = [
   'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 22%, rgba(0,0,0,0.85) 42%, #000 58%)',
   'linear-gradient(to bottom, transparent 0%, #000 16%, #000 86%, transparent 100%)',
@@ -265,9 +287,6 @@ export default function HomePage() {
   return (
     <div className="bg-white min-h-screen">
 
-      {/* ============================================================
-          HERO
-          ============================================================ */}
       <section
         className="relative overflow-hidden"
         style={{
@@ -275,169 +294,75 @@ export default function HomePage() {
           minHeight: '520px',
         }}
       >
-        {/* ── Full-section professionals image — absolutely positioned, right side ── */}
         <div
           className="hidden lg:block absolute pointer-events-none"
-          style={{
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: '58%',
-            zIndex: 1,
-            overflow: 'hidden',
-          }}
+          style={{ top: 0, right: 0, bottom: 0, width: '58%', zIndex: 1, overflow: 'hidden' }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/hero-professionals.png"
-            alt=""
-            aria-hidden
+            src="/hero-professionals.png" alt="" aria-hidden
             style={{
-              position: 'absolute',
-              inset: 0,
-              height: '100%',
-              width: '100%',
-              objectFit: 'cover',
-              // crops the photo's empty top sky and the blank strip under the feet
-              objectPosition: 'center 57%',
-              // 'darken' keeps the near-white photo backdrop from washing over the section tint
+              position: 'absolute', inset: 0, height: '100%', width: '100%',
+              objectFit: 'cover', objectPosition: 'center 57%',
               mixBlendMode: 'darken',
-              WebkitMaskImage: HERO_IMAGE_MASK,
-              maskImage: HERO_IMAGE_MASK,
-              WebkitMaskComposite: 'source-in',
-              maskComposite: 'intersect',
+              WebkitMaskImage: HERO_IMAGE_MASK, maskImage: HERO_IMAGE_MASK,
+              WebkitMaskComposite: 'source-in', maskComposite: 'intersect',
             }}
           />
         </div>
 
-        {/* ── Text content ── */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative" style={{ zIndex: 10 }}>
           <div className="max-w-[600px] py-16 lg:py-20">
-
-            {/* Badge */}
             <div className="mb-6">
-              <span
-                className="inline-flex items-center gap-2 text-[12.5px] font-semibold px-4 py-1.5 rounded-full"
-                style={{
-                  background: '#E0EAFF',
-                  color: '#2563EB',
-                  border: '1px solid #C7D7F9',
-                }}
-              >
+              <span className="inline-flex items-center gap-2 text-[12.5px] font-semibold px-4 py-1.5 rounded-full" style={{ background: '#E0EAFF', color: '#2563EB', border: '1px solid #C7D7F9' }}>
                 ☆ &nbsp;India&apos;s No.1 Automotive Job Portal
               </span>
             </div>
-
-            {/* Headline */}
-            <h1
-              className="font-extrabold leading-[1.12] tracking-[-0.03em] mb-5"
-              style={{ fontSize: 'clamp(34px, 4vw, 52px)', color: '#0F172A' }}
-            >
+            <h1 className="font-extrabold leading-[1.12] tracking-[-0.03em] mb-5" style={{ fontSize: 'clamp(34px, 4vw, 52px)', color: '#0F172A' }}>
               Find Your Perfect<br />
-              <span
-                style={{
-                  background: 'linear-gradient(90deg, #2563EB 0%, #7C3AED 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
+              <span style={{ background: 'linear-gradient(90deg, #2563EB 0%, #7C3AED 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 Automotive Job
               </span>
             </h1>
-
-            {/* Subtitle */}
             <p style={{ fontSize: '15px', color: '#64748B', lineHeight: '1.7', marginBottom: '32px', maxWidth: '440px' }}>
-              Explore thousands of jobs from leading automotive companies
-              and take the next step in your career.
+              Explore thousands of jobs from leading automotive companies and take the next step in your career.
             </p>
 
             {/* Search bar */}
-            <div
-              style={{
-                display: 'flex',
-                background: 'white',
-                borderRadius: '12px',
-                border: '1.5px solid #DBEAFE',
-                boxShadow: '0 4px 20px rgba(37,99,235,0.12)',
-                maxWidth: '560px',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Job title */}
+            <div style={{ display: 'flex', background: 'white', borderRadius: '12px', border: '1.5px solid #DBEAFE', boxShadow: '0 4px 20px rgba(37,99,235,0.12)', maxWidth: '560px', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, padding: '0 16px', height: '52px', borderRight: '1px solid #E2E8F0', minWidth: 0 }}>
                 <Search style={{ width: '16px', height: '16px', color: '#94A3B8', flexShrink: 0 }} />
-                <input
-                  type="text"
-                  placeholder="Job title, keywords..."
-                  style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '14px', color: '#0F172A', width: '100%' }}
-                />
+                <input type="text" placeholder="Job title, keywords..." style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '14px', color: '#0F172A', width: '100%' }} />
               </div>
-              {/* Location */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, padding: '0 16px', height: '52px', minWidth: 0 }}>
                 <MapPin style={{ width: '16px', height: '16px', color: '#94A3B8', flexShrink: 0 }} />
-                <input
-                  type="text"
-                  placeholder="Location"
-                  style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '14px', color: '#0F172A', width: '100%' }}
-                />
+                <input type="text" placeholder="Location" style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '14px', color: '#0F172A', width: '100%' }} />
               </div>
-              {/* Button */}
-              <Link
-                href="/jobs"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  background: '#2563EB', color: 'white',
-                  fontWeight: 600, fontSize: '14.5px',
-                  padding: '0 24px', whiteSpace: 'nowrap',
-                  flexShrink: 0, textDecoration: 'none',
-                  transition: 'background 0.2s',
-                }}
+              <Link href="/jobs" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#2563EB', color: 'white', fontWeight: 600, fontSize: '14.5px', padding: '0 24px', whiteSpace: 'nowrap', flexShrink: 0, textDecoration: 'none', transition: 'background 0.2s' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1D4ED8'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#2563EB'; }}
-              >
-                Find Jobs
-              </Link>
+              >Find Jobs</Link>
             </div>
 
-            {/* Popular Searches */}
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', marginTop: '20px' }}>
               <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748B' }}>Popular Searches:</span>
               {POPULAR_SEARCHES.map((tag) => (
-                <Link
-                  key={tag}
-                  href={`/jobs?q=${encodeURIComponent(tag)}`}
-                  style={{
-                    fontSize: '12.5px', fontWeight: 500,
-                    color: '#2563EB', background: 'white',
-                    border: '1px solid #BFDBFE', borderRadius: '999px',
-                    padding: '4px 12px', textDecoration: 'none',
-                    transition: 'background 0.15s',
-                  }}
-                >
+                <Link key={tag} href={`/jobs?q=${encodeURIComponent(tag)}`} style={{ fontSize: '12.5px', fontWeight: 500, color: '#2563EB', background: 'white', border: '1px solid #BFDBFE', borderRadius: '999px', padding: '4px 12px', textDecoration: 'none' }}>
                   {tag}
                 </Link>
               ))}
             </div>
-
           </div>
         </div>
-
-        {/* Bottom spacer for stats card overlap */}
         <div style={{ height: '60px' }} />
       </section>
 
-
-
-
       {/* ============================================================
-          STATS CARD — white card overlapping hero bottom
+          STATS CARD
           ============================================================ */}
       <section className="relative z-10 -mt-[60px] pb-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-[20px] border border-[#E8EEF8] overflow-hidden"
-            style={{ boxShadow: '0 8px 32px rgba(15,23,42,0.10)' }}
-          >
+          <div className="bg-white rounded-[20px] border border-[#E8EEF8] overflow-hidden" style={{ boxShadow: '0 8px 32px rgba(15,23,42,0.10)' }}>
             <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#F1F5F9]">
               {STATS.map(({ value, label, icon: Icon }) => (
                 <div key={label} className="flex items-center gap-4 px-6 lg:px-8 py-7">
@@ -445,12 +370,7 @@ export default function HomePage() {
                     <Icon className="w-5 h-5 text-[#2563EB]" strokeWidth={1.8} />
                   </div>
                   <div>
-                    <div
-                      className="font-extrabold text-[#0F172A] leading-none tracking-[-0.03em]"
-                      style={{ fontSize: '28px', fontFamily: 'var(--font-sora), sans-serif' }}
-                    >
-                      {value}
-                    </div>
+                    <div className="font-extrabold text-[#0F172A] leading-none tracking-[-0.03em]" style={{ fontSize: '28px' }}>{value}</div>
                     <div className="text-[13px] text-[#64748B] mt-1 font-medium">{label}</div>
                   </div>
                 </div>
@@ -461,45 +381,39 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================
-          POPULAR JOB CATEGORIES
+          POPULAR JOB CATEGORIES — PREMIUM REDESIGN
           ============================================================ */}
-      <section className="py-10 bg-white">
+      <section className="py-14" style={{ background: '#F7F9FC' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-[20px] font-bold text-[#0F172A] tracking-[-0.02em]">
-              Popular Job Categories
-            </h2>
-            <Link
-              href="/jobs"
-              className="flex items-center gap-1 text-[13.5px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition-colors duration-150"
-            >
-              View All Categories <ArrowRight className="w-3.5 h-3.5" />
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#2563EB] mb-1">Browse by Role</p>
+              <h2 className="text-[26px] sm:text-[30px] font-bold text-[#0F172A] tracking-tight leading-tight">Popular Job Categories</h2>
+              <p className="text-[14px] text-[#64748B] mt-1.5 max-w-md">Find jobs across every specialisation in India&apos;s automobile industry</p>
+            </div>
+            <Link href="/jobs" className="hidden sm:flex items-center gap-1.5 text-[13.5px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] bg-[#EFF6FF] hover:bg-[#DBEAFE] px-4 py-2 rounded-[10px] transition-all duration-200 shrink-0">
+              View All <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            {CATEGORIES.map(({ id, label, count, Icon }) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {CATEGORIES.map(({ id, label, count, Icon, accent }) => (
               <Link
                 key={id}
                 href={`/jobs?category=${encodeURIComponent(id)}`}
-                className="group flex flex-col items-center text-center bg-white border border-[#E2E8F0] rounded-[16px] px-2 py-5 hover:border-[#BFDBFE] hover:-translate-y-1 transition-all duration-250 cursor-pointer"
-                style={{ boxShadow: '0 1px 4px rgba(15,23,42,0.04)' }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 16px rgba(37,99,235,0.10)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(15,23,42,0.04)';
-                }}
+                className="group bg-white border border-[#E8EDF5] rounded-[18px] p-5 flex items-center gap-4 hover:-translate-y-[3px] hover:border-[#BFDBFE] transition-all duration-250 cursor-pointer"
+                style={{ boxShadow: '0 2px 10px rgba(15,23,42,0.05)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(15,23,42,0.10)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 10px rgba(15,23,42,0.05)'; }}
               >
-                <div className="w-12 h-12 rounded-[12px] bg-[#EFF6FF] flex items-center justify-center mb-3 group-hover:bg-[#2563EB] transition-all duration-250">
-                  <div className="text-[#2563EB] group-hover:text-white transition-colors duration-250">
-                    <Icon />
-                  </div>
+                <div className="w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 transition-all duration-250 group-hover:scale-110" style={{ background: `${accent}18`, color: accent }}>
+                  <Icon />
                 </div>
-                <p className="text-[12.5px] font-semibold text-[#0F172A] mb-1 leading-tight group-hover:text-[#2563EB] transition-colors duration-150">
-                  {label}
-                </p>
-                <p className="text-[11.5px] text-[#94A3B8]">{count} Jobs</p>
+                <div className="min-w-0">
+                  <p className="text-[13.5px] font-bold text-[#0F172A] leading-tight group-hover:text-[#2563EB] transition-colors truncate">{label}</p>
+                  <p className="text-[12px] text-[#94A3B8] mt-0.5 font-medium">{count} Jobs</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all duration-200 shrink-0 ml-auto" />
               </Link>
             ))}
           </div>
@@ -507,108 +421,87 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================
-          TWO-COLUMN: RECENT JOBS + JOB SEEKERS CTA
+          RECENT JOBS + FOR JOB SEEKERS — PREMIUM REDESIGN
           ============================================================ */}
-      <section className="py-8 pb-16 bg-white">
+      <section className="py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {/* ── LEFT: Recent Jobs ── */}
             <div className="lg:col-span-2">
-              <div className="bg-white border border-[#E2E8F0] rounded-[20px] overflow-hidden"
-                style={{ boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}
-              >
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F5F9]">
-                  <h2 className="text-[17px] font-bold text-[#0F172A] tracking-[-0.02em]">Recent Jobs</h2>
-                  <Link href="/jobs" className="flex items-center gap-1 text-[13px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition-colors duration-150">
-                    View All Jobs <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+              <div className="flex items-end justify-between mb-5">
+                <div>
+                  <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#2563EB] mb-1">Latest Openings</p>
+                  <h2 className="text-[24px] font-bold text-[#0F172A] tracking-tight">Recent Jobs</h2>
                 </div>
+                <Link href="/jobs" className="flex items-center gap-1 text-[13px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition-colors">
+                  View All <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
 
+              <div className="bg-white border border-[#E8EDF5] rounded-[20px] overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(15,23,42,0.06)' }}>
                 <div className="divide-y divide-[#F8FAFC]">
                   {RECENT_JOBS.map((job) => (
-                    <Link
-                      key={job.id}
-                      href={`/jobs/${job.id}`}
-                      className="flex items-center gap-4 px-6 py-5 hover:bg-[#F8FAFC] transition-colors duration-150 group"
-                    >
-                      <div
-                        className="w-11 h-11 rounded-[10px] flex items-center justify-center text-[13px] font-bold shrink-0"
-                        style={{ background: job.logoBg, color: job.logoColor }}
-                      >
+                    <Link key={job.id} href={`/jobs/${job.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-[#F8FAFD] transition-colors duration-150 group">
+                      <div className="w-11 h-11 rounded-[12px] flex items-center justify-center text-[13px] font-bold shrink-0 group-hover:scale-105 transition-transform duration-200" style={{ background: job.logoBg, color: job.logoColor }}>
                         {job.companyShort}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="text-[14.5px] font-semibold text-[#0F172A] group-hover:text-[#2563EB] transition-colors duration-150">
-                            {job.title}
-                          </h3>
-                          <span className="text-[11.5px] text-[#94A3B8] shrink-0 mt-0.5">{job.posted}</span>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <h3 className="text-[14px] font-semibold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate">{job.title}</h3>
+                          {job.hot && <span className="shrink-0 text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#D97706]">🔥 Hot</span>}
                         </div>
-                        <p className="text-[12.5px] text-[#64748B] mb-2">{job.company}</p>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                          <span className="flex items-center gap-1 text-[12px] text-[#64748B]">
-                            <MapPin className="w-3 h-3 text-[#94A3B8]" />{job.location}
-                          </span>
-                          <span className="flex items-center gap-1 text-[12px] text-[#64748B]">
-                            <Briefcase className="w-3 h-3 text-[#94A3B8]" />{job.experience}
-                          </span>
-                          <span className="flex items-center gap-1 text-[12px] text-[#64748B]">
-                            <span className="text-[#94A3B8] text-[10px]">₹</span>{job.salary}
-                          </span>
-                          <span
-                            className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
-                            style={{ background: '#EFF6FF', color: '#2563EB' }}
-                          >
-                            {job.type}
-                          </span>
+                        <p className="text-[12.5px] text-[#64748B] mb-1.5">{job.company}</p>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="flex items-center gap-1 text-[11.5px] text-[#94A3B8]"><MapPin className="w-3 h-3" />{job.location}</span>
+                          <span className="flex items-center gap-1 text-[11.5px] text-[#94A3B8]"><Briefcase className="w-3 h-3" />{job.experience}</span>
+                          <span className="text-[11.5px] font-semibold text-[#059669]">{job.salary}</span>
                         </div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] block mb-1.5">{job.type}</span>
+                        <span className="text-[11px] text-[#94A3B8]">{job.posted}</span>
                       </div>
                     </Link>
                   ))}
                 </div>
-
-                <div className="px-6 py-4 border-t border-[#F1F5F9] text-center">
-                  <Link href="/jobs" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition-colors duration-150">
-                    View All Jobs <ArrowRight className="w-3.5 h-3.5" />
+                <div className="px-5 py-4 border-t border-[#F1F5F9] bg-[#FAFBFF]">
+                  <Link href="/jobs" className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition-colors">
+                    Browse All 5,000+ Jobs <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>
             </div>
 
             {/* ── RIGHT: For Job Seekers ── */}
-            <div className="lg:col-span-1">
-              <div className="bg-white border border-[#E2E8F0] rounded-[20px] overflow-hidden h-full flex flex-col"
-                style={{ boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}
-              >
-                <div className="px-6 py-4 border-b border-[#F1F5F9]">
-                  <h2 className="text-[17px] font-bold text-[#0F172A] tracking-[-0.02em]">For Job Seekers</h2>
-                </div>
-
-                <div className="divide-y divide-[#F8FAFC] flex-1">
-                  {JOB_SEEKER_FEATURES.map(({ icon: Icon, title, sub }) => (
-                    <div key={title} className="flex items-start gap-3.5 px-6 py-5">
-                      <div className="w-9 h-9 rounded-[10px] bg-[#EFF6FF] flex items-center justify-center shrink-0 mt-0.5">
-                        <Icon className="w-4 h-4 text-[#2563EB]" strokeWidth={1.8} />
-                      </div>
-                      <div>
-                        <p className="text-[13.5px] font-semibold text-[#0F172A] mb-0.5">{title}</p>
-                        <p className="text-[12px] text-[#64748B]">{sub}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="px-6 py-5">
-                  <Link
-                    href="/register?role=candidate"
-                    className="w-full flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-[14px] py-3.5 rounded-[12px] transition-all duration-200"
-                    style={{ boxShadow: '0 2px 8px rgba(37,99,235,0.25)' }}
+            <div>
+              <div className="mb-5">
+                <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#2563EB] mb-1">Career Tools</p>
+                <h2 className="text-[24px] font-bold text-[#0F172A] tracking-tight">For Job Seekers</h2>
+              </div>
+              <div className="space-y-3">
+                {JOB_SEEKER_FEATURES.map(({ icon: Icon, title, sub, color, bg }) => (
+                  <div
+                    key={title}
+                    className="group bg-white border border-[#E8EDF5] rounded-[16px] p-4 flex items-start gap-3.5 hover:-translate-y-[2px] hover:border-[#BFDBFE] cursor-pointer transition-all duration-200"
+                    style={{ boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(15,23,42,0.09)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(15,23,42,0.04)'; }}
                   >
-                    <Users className="w-4 h-4" />
-                    Register Now
-                  </Link>
-                </div>
+                    <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-200" style={{ background: bg, color }}>
+                      <Icon className="w-4 h-4" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13.5px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors mb-0.5">{title}</p>
+                      <p className="text-[12px] text-[#64748B] leading-snug">{sub}</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] shrink-0 ml-auto mt-1 group-hover:translate-x-0.5 transition-all duration-200" />
+                  </div>
+                ))}
+                <Link href="/register?role=candidate" className="w-full flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-[14px] py-3.5 rounded-[14px] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mt-1" style={{ boxShadow: '0 4px 14px rgba(37,99,235,0.30)' }}>
+                  <Users className="w-4 h-4" />
+                  Create Free Profile
+                </Link>
               </div>
             </div>
 
@@ -617,20 +510,115 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================
-          TOP COMPANIES HIRING — Real SVG logos + 3D cards
+          TOP COMPANIES HIRING
           ============================================================ */}
-      <section className="py-14 bg-[#F8FAFC] border-t border-[#F1F5F9]">
+      <section className="py-14" style={{ background: '#F7F9FC' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h2 className="text-[22px] font-bold text-[#0F172A] tracking-[-0.02em] mb-1">
-              Top Companies Hiring
-            </h2>
-            <p className="text-[13.5px] text-[#64748B]">Trusted by India&apos;s leading automobile employers</p>
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#2563EB] mb-1">Trusted Employers</p>
+              <h2 className="text-[26px] sm:text-[30px] font-bold text-[#0F172A] tracking-tight">Top Companies Hiring</h2>
+              <p className="text-[14px] text-[#64748B] mt-1.5">India&apos;s leading automobile employers actively recruiting</p>
+            </div>
+            <Link href="/companies" className="hidden sm:flex items-center gap-1.5 text-[13.5px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] bg-[#EFF6FF] hover:bg-[#DBEAFE] px-4 py-2 rounded-[10px] transition-all duration-200 shrink-0">
+              All Companies <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
             {COMPANIES.map((c) => (
               <CompanyCard key={c.name} {...c} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+          EV SECTOR SPOTLIGHT
+          ============================================================ */}
+      <section className="py-14 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="rounded-[24px] overflow-hidden" style={{ background: 'linear-gradient(135deg,#0F2D58 0%,#1E3A8A 60%,#1D4ED8 100%)' }}>
+            <div className="px-8 py-10 md:flex items-start gap-10">
+              <div className="flex-1 min-w-0 mb-8 md:mb-0">
+                <span className="inline-block bg-[#22D3EE]/20 border border-[#22D3EE]/30 text-[#67E8F9] text-[11px] font-bold uppercase tracking-[0.12em] px-3 py-1.5 rounded-full mb-4">⚡ EV Revolution</span>
+                <h2 className="text-[26px] sm:text-[32px] font-bold text-white leading-tight mb-3">
+                  India&apos;s EV Sector is<br />Hiring at Record Pace
+                </h2>
+                <p className="text-[14px] text-[#93C5FD] leading-[1.7] mb-6 max-w-md">
+                  Over 2,000 EV-specific roles added in 2026. From battery engineers to charging-infra technicians — the future is electric.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/jobs?category=ev" className="flex items-center gap-2 bg-white text-[#1D4ED8] font-bold text-[13.5px] px-5 py-2.5 rounded-[12px] hover:bg-[#EFF6FF] transition-all duration-200 hover:scale-[1.02]">⚡ Browse EV Jobs</Link>
+                  <Link href="/blog/ev-technician-skills-2026" className="flex items-center gap-2 border border-white/30 text-white font-semibold text-[13.5px] px-5 py-2.5 rounded-[12px] hover:bg-white/10 transition-all duration-200">EV Career Guide →</Link>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {EV_JOBS.map(({ title, company, location, salary, tag }) => (
+                  <Link key={title} href="/jobs?category=ev" className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-[16px] p-4 transition-all duration-200 hover:-translate-y-[2px] group block">
+                    <div className="flex items-start justify-between mb-2">
+                      <p className="text-[13.5px] font-bold text-white leading-tight group-hover:text-[#67E8F9] transition-colors">{title}</p>
+                      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#22D3EE]/20 text-[#67E8F9] ml-2">{tag}</span>
+                    </div>
+                    <p className="text-[12px] text-[#93C5FD] mb-1">{company}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-[11px] text-[#94A3B8]"><MapPin className="w-3 h-3" />{location}</span>
+                      <span className="text-[11.5px] font-semibold text-[#34D399]">{salary}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+          INDUSTRY INSIGHTS
+          ============================================================ */}
+      <section className="py-14" style={{ background: '#F7F9FC' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#2563EB] mb-2">Market Pulse</p>
+            <h2 className="text-[26px] sm:text-[30px] font-bold text-[#0F172A] tracking-tight mb-2">Automobile Industry Insights</h2>
+            <p className="text-[14px] text-[#64748B] max-w-lg mx-auto">Real data from India&apos;s automotive job market — updated monthly</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              { emoji: '📈', stat: '38%',   label: 'Growth in EV jobs',        sub: 'Year-over-year 2025→2026',    color: '#10B981' },
+              { emoji: '💰', stat: '₹4.2L', label: 'Avg. Technician Salary',   sub: 'Median across tier-1 cities', color: '#F59E0B' },
+              { emoji: '⏱️', stat: '7 Days', label: 'Avg. Hiring Timeline',    sub: 'From apply to offer',         color: '#3B82F6' },
+              { emoji: '🏙️', stat: '120+',  label: 'Cities with Openings',     sub: 'Metro & tier-2 markets',      color: '#8B5CF6' },
+            ].map(({ emoji, stat, label, sub, color }) => (
+              <div key={label} className="bg-white border border-[#E8EDF5] rounded-[20px] p-6 hover:-translate-y-[3px] transition-all duration-250"
+                style={{ boxShadow: '0 2px 10px rgba(15,23,42,0.05)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(15,23,42,0.10)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 10px rgba(15,23,42,0.05)'; }}
+              >
+                <div className="text-3xl mb-3">{emoji}</div>
+                <div className="text-[32px] font-extrabold leading-none tracking-tight mb-1" style={{ color }}>{stat}</div>
+                <p className="text-[14px] font-bold text-[#0F172A] mb-0.5">{label}</p>
+                <p className="text-[12px] text-[#94A3B8]">{sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================
+          WHY MOTOJOBS — TRUST STRIP
+          ============================================================ */}
+      <section className="py-12 bg-white border-t border-[#F1F5F9]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-[22px] font-bold text-[#0F172A] tracking-tight">Why 25,000+ professionals choose MotoJobs</h2>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+            {TRUST_ITEMS.map(({ icon, title, desc }) => (
+              <div key={title} className="flex flex-col items-center text-center p-6 bg-[#F7F9FC] rounded-[18px] hover:bg-[#EFF6FF] transition-colors duration-200">
+                <div className="text-[36px] mb-3">{icon}</div>
+                <p className="text-[14px] font-bold text-[#0F172A] mb-1">{title}</p>
+                <p className="text-[12.5px] text-[#64748B] leading-snug">{desc}</p>
+              </div>
             ))}
           </div>
         </div>
