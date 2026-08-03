@@ -80,6 +80,8 @@ export const LIMITS = {
   resetPassword: { limit: 10, windowMs: 60 * 60_000 },
   upload: { limit: 30, windowMs: 15 * 60_000 },
   onboarding: { limit: 20, windowMs: 60 * 60_000 },
+  /// Per-step wizard autosave — fires far more often than a final submit.
+  onboardingDraft: { limit: 120, windowMs: 60 * 60_000 },
   companyProfile: { limit: 30, windowMs: 60 * 60_000 },
   companyDocument: { limit: 20, windowMs: 60 * 60_000 },
   contact: { limit: 5, windowMs: 60 * 60_000 },

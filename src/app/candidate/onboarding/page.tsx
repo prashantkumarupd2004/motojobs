@@ -1,178 +1,109 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  ArrowLeft,
-  ArrowRight,
-  BadgeCheck,
-  Briefcase,
-  CheckCircle2,
-  FileText,
-  Loader2,
-  MapPin,
-  UserCircle2,
-} from 'lucide-react';
-import {
-  AUTO_HUB_CITIES,
-  CANDIDATE_TYPES,
-  EXPERIENCE_BANDS,
-  INDUSTRIES,
-  INTERESTED_ROLES,
-  LANGUAGES,
-  MAX_IMAGE_BYTES,
-  MAX_RESUME_BYTES,
-  NOTICE_PERIODS,
-  OEM_BRANDS,
-  PASSING_YEARS,
-  QUALIFICATIONS,
-} from '@/lib/automotive';
-import { onboardingSchema } from '@/lib/validation/candidate';
+import { ArrowLeft, ArrowRight, BadgeCheck, CheckCircle2, Loader2 } from 'lucide-react';
+import { STEP_COMPLETION } from '@/lib/automotive';
+import { stepSchemas } from '@/lib/validation/candidate';
 import { apiFetch } from '@/lib/http';
+import { Stepper } from '@/components/form';
+import StepWelcome from '@/components/onboarding/StepWelcome';
+import StepPersonal from '@/components/onboarding/StepPersonal';
+import StepProfessional from '@/components/onboarding/StepProfessional';
+import StepCategories from '@/components/onboarding/StepCategories';
+import StepSkills from '@/components/onboarding/StepSkills';
+import StepResume from '@/components/onboarding/StepResume';
+import StepPreferences from '@/components/onboarding/StepPreferences';
 import {
-  Field,
-  FileUpload,
-  MultiSelect,
-  RadioCards,
-  SearchableSelect,
-  Stepper,
-  TextInput,
-  YesNo,
-} from '@/components/form';
+  INITIAL_STATE,
+  LAST_STEP,
+  STEP_LABELS,
+  fullPayload,
+  stepPayload,
+  type Errors,
+  type WizardState,
+} from '@/components/onboarding/wizard-state';
 
-const STEPS = ['Your background', 'Role & location', 'Experience', 'Finish up'] as const;
-
-type Errors = Record<string, string>;
-
-const GENDERS = ['Male', 'Female', 'Other', 'Prefer not to say'] as const;
-
-/** Youngest permitted DOB: candidates must be at least 14 to hold an apprenticeship. */
-const MAX_DOB = `${PASSING_YEARS[0] - 14}-12-31`;
+const STEP_HEADINGS = [
+  { title: 'Get started', blurb: '' },
+  { title: 'Personal information', blurb: 'Basic details so employers know who they are hiring.' },
+  { title: 'Professional details', blurb: 'Your education or work history in the trade.' },
+  { title: 'Job categories', blurb: 'The parts of the industry you want to work in.' },
+  { title: 'Skills', blurb: 'What you can do on the floor, in the bay or on the phone.' },
+  { title: 'Resume', blurb: 'Upload it once and apply to any job with a single tap.' },
+  { title: 'Job preferences', blurb: 'Where you want to work and what you expect to earn.' },
+] as const;
 
 export default function CandidateOnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  const [state, setState] = useState<WizardState>(INITIAL_STATE);
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [loading, setLoading] = useState(true);
   const [done, setDone] = useState(false);
 
-  const [candidateType, setCandidateType] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('');
-  const [gender, setGender] = useState('');
-  const [interestedRole, setInterestedRole] = useState('');
-  const [currentCity, setCurrentCity] = useState('');
-  const [preferredLocations, setPreferredLocations] = useState<string[]>([]);
-  const [qualification, setQualification] = useState('');
+  const patch = useCallback((updates: Partial<WizardState>) => {
+    setState((s) => ({ ...s, ...updates }));
+  }, []);
 
-  const [passingYear, setPassingYear] = useState('');
-  const [college, setCollege] = useState('');
-  const [internship, setInternship] = useState('');
-  const [certifications, setCertifications] = useState('');
+  // Restore any saved draft so a dropped session resumes where it left off.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/candidate/onboarding');
+        if (!res.ok) return;
+        const { data } = await res.json();
+        if (cancelled || !data) return;
+        setState((s) => hydrate(s, data));
+        if (typeof data.profileStep === 'number' && data.profileStep > 0) {
+          setStep(Math.min(data.profileStep, LAST_STEP));
+        }
+      } catch {
+        // A failed restore is not fatal — the wizard starts empty.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const [totalExperience, setTotalExperience] = useState('');
-  const [currentCompany, setCurrentCompany] = useState('');
-  const [currentDesignation, setCurrentDesignation] = useState('');
-  const [currentSalary, setCurrentSalary] = useState('');
-  const [expectedSalary, setExpectedSalary] = useState('');
-  const [noticePeriodBand, setNoticePeriodBand] = useState('');
-  const [brandExperience, setBrandExperience] = useState<string[]>([]);
-  const [industry, setIndustry] = useState('');
+  const save = async (index: number) => {
+    try {
+      await apiFetch('/api/candidate/onboarding', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: index, data: stepPayload(index, state) }),
+      });
+    } catch {
+      // Autosave is best-effort; the final submit is what must succeed.
+    }
+  };
 
-  const [resume, setResume] = useState<{ url: string; name: string } | null>(null);
-  const [photo, setPhoto] = useState<{ url: string; name: string } | null>(null);
-  const [drivingLicense, setDrivingLicense] = useState<boolean | null>(null);
-  const [ownVehicle, setOwnVehicle] = useState<boolean | null>(null);
-  const [languages, setLanguages] = useState<string[]>([]);
-  const [referralCode, setReferralCode] = useState('');
-  const [acceptTerms, setAcceptTerms] = useState(false);
-
-  const isFresher = candidateType === 'FRESHER';
-  const isAutomobile = candidateType === 'AUTOMOBILE';
-  const isNonAutomobile = candidateType === 'NON_AUTOMOBILE';
-
-  const payload = useMemo(
-    () => ({
-      candidateType,
-      dateOfBirth: dateOfBirth || undefined,
-      gender: gender || undefined,
-      interestedRole,
-      currentCity: currentCity.trim(),
-      preferredLocations,
-      qualification,
-      passingYear: passingYear ? Number(passingYear) : undefined,
-      college: college.trim() || undefined,
-      internship: internship.trim() || undefined,
-      certifications: certifications.trim() || undefined,
-      totalExperience: totalExperience || undefined,
-      currentCompany: currentCompany.trim() || undefined,
-      currentDesignation: currentDesignation.trim() || undefined,
-      currentSalary: currentSalary ? Number(currentSalary) : undefined,
-      expectedSalary: expectedSalary ? Number(expectedSalary) : undefined,
-      noticePeriodBand: noticePeriodBand || undefined,
-      brandExperience: brandExperience.length ? brandExperience : undefined,
-      industry: industry || undefined,
-      resumeUrl: resume?.url,
-      resumeName: resume?.name,
-      profileImage: photo?.url,
-      drivingLicense: drivingLicense ?? false,
-      ownVehicle: ownVehicle ?? false,
-      languages,
-      referralCode: referralCode.trim() || undefined,
-      acceptTerms,
-    }),
-    [
-      candidateType, dateOfBirth, gender, interestedRole, currentCity, preferredLocations,
-      qualification, passingYear, college, internship, certifications, totalExperience,
-      currentCompany, currentDesignation, currentSalary, expectedSalary, noticePeriodBand,
-      brandExperience, industry, resume, photo, drivingLicense, ownVehicle, languages,
-      referralCode, acceptTerms,
-    ]
-  );
-
-  /** Fields owned by each step, so we only surface errors the user can see. */
-  const stepFields: string[][] = [
-    ['candidateType', 'qualification'],
-    ['interestedRole', 'currentCity', 'preferredLocations'],
-    isFresher
-      ? ['passingYear', 'college']
-      : [
-          'totalExperience',
-          'currentCompany',
-          'currentDesignation',
-          'noticePeriodBand',
-          ...(isAutomobile ? ['brandExperience'] : []),
-          ...(isNonAutomobile ? ['industry'] : []),
-        ],
-    ['languages', 'acceptTerms'],
-  ];
-
-  const validateStep = (index: number): boolean => {
-    const result = onboardingSchema.safeParse(payload);
+  const validate = (index: number): boolean => {
+    const result = stepSchemas[index].safeParse(stepPayload(index, state));
     if (result.success) {
       setErrors({});
       return true;
     }
-
-    const all: Errors = {};
+    const found: Errors = {};
     for (const issue of result.error.issues) {
       const key = String(issue.path[0] ?? 'form');
-      if (!all[key]) all[key] = issue.message;
+      if (!found[key]) found[key] = issue.message;
     }
-
-    const owned = stepFields[index];
-    const relevant: Errors = {};
-    for (const key of owned) {
-      if (all[key]) relevant[key] = all[key];
-    }
-
-    setErrors(relevant);
-    return Object.keys(relevant).length === 0;
+    setErrors(found);
+    return false;
   };
 
   const next = () => {
-    if (!validateStep(step)) return;
-    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    if (step > 0 && !validate(step)) return;
+    void save(step);
+    setErrors({});
+    setStep((s) => Math.min(s + 1, LAST_STEP));
   };
 
   const back = () => {
@@ -180,15 +111,20 @@ export default function CandidateOnboardingPage() {
     setStep((s) => Math.max(s - 1, 0));
   };
 
+  const skip = () => {
+    void save(0);
+    router.push('/candidate/dashboard');
+  };
+
   const submit = async () => {
-    if (!validateStep(STEPS.length - 1)) return;
+    if (!validate(LAST_STEP)) return;
     setSubmitting(true);
     setFormError('');
     try {
       const res = await apiFetch('/api/candidate/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(fullPayload(state)),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -196,13 +132,36 @@ export default function CandidateOnboardingPage() {
         throw new Error(data.error || 'Could not save your profile');
       }
       setDone(true);
-      setTimeout(() => router.push('/candidate/dashboard'), 1600);
+      router.push('/candidate/dashboard');
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Could not save your profile');
-    } finally {
       setSubmitting(false);
     }
   };
+
+  const progress = STEP_COMPLETION[step];
+  const heading = STEP_HEADINGS[step];
+
+  const body = useMemo(() => {
+    const props = { state, patch, errors };
+    switch (step) {
+      case 0:
+        return <StepWelcome onStart={next} onSkip={skip} />;
+      case 1:
+        return <StepPersonal {...props} />;
+      case 2:
+        return <StepProfessional {...props} />;
+      case 3:
+        return <StepCategories {...props} />;
+      case 4:
+        return <StepSkills {...props} />;
+      case 5:
+        return <StepResume {...props} />;
+      default:
+        return <StepPreferences {...props} />;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, state, errors]);
 
   if (done) {
     return (
@@ -220,431 +179,46 @@ export default function CandidateOnboardingPage() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <Loader2 className="w-7 h-7 text-brand-600 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-canvas py-10 px-4">
+    <div className="min-h-screen bg-canvas py-8 sm:py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-[30px] font-extrabold text-ink tracking-[-0.038em] leading-[1.15] mb-2">
-            Complete your profile
-          </h1>
-          <p className="text-ink-muted text-[15px] leading-[1.6]">
-            Employers across dealerships, workshops and OEMs search these details. It takes
-            about three minutes.
-          </p>
+        <header className="mb-7">
+          <div className="flex items-end justify-between gap-4 mb-2">
+            <h1 className="text-[26px] sm:text-[30px] font-extrabold text-ink tracking-[-0.038em] leading-[1.15]">
+              {heading.title}
+            </h1>
+            <span className="text-[13px] font-bold text-brand-600 shrink-0 pb-1.5">
+              {progress}%
+            </span>
+          </div>
+          <div className="w-full h-2 bg-line-soft rounded-full overflow-hidden">
+            <div
+              className="h-full grad-brand rounded-full transition-all duration-700 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]"
+              style={{ width: `${progress}%` }}
+              role="progressbar"
+              aria-valuenow={progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Profile completion"
+            />
+          </div>
+          {heading.blurb && (
+            <p className="text-ink-muted text-[14.5px] leading-[1.6] mt-3">{heading.blurb}</p>
+          )}
         </header>
 
         <div className="bg-white border border-line rounded-[24px] p-6 sm:p-8 shadow-e2">
-          <Stepper steps={STEPS} current={step} />
+          {step > 0 && <Stepper steps={STEP_LABELS.slice(1)} current={step - 1} />}
 
-          {step === 0 && (
-            <section className="space-y-6 animate-fade-in">
-              <SectionTitle icon={UserCircle2} title="Tell us where you are today" />
-
-              <Field
-                label="Which best describes you?"
-                required
-                error={errors.candidateType}
-              >
-                <RadioCards
-                  name="candidateType"
-                  value={candidateType}
-                  onChange={setCandidateType}
-                  options={CANDIDATE_TYPES.map((t) => ({
-                    value: t.id,
-                    label: t.label,
-                    blurb: t.blurb,
-                  }))}
-                />
-              </Field>
-
-              <Field
-                label="Highest qualification"
-                required
-                error={errors.qualification}
-                htmlFor="qualification"
-              >
-                <SearchableSelect
-                  id="qualification"
-                  options={QUALIFICATIONS}
-                  value={qualification}
-                  onChange={setQualification}
-                  placeholder="Select your qualification"
-                  error={!!errors.qualification}
-                />
-              </Field>
-
-              <div className="grid sm:grid-cols-2 gap-5">
-                <Field label="Date of birth" htmlFor="dob">
-                  <TextInput
-                    id="dob"
-                    type="date"
-                    value={dateOfBirth}
-                    max={MAX_DOB}
-                    onChange={(e) => setDateOfBirth(e.target.value)}
-                  />
-                </Field>
-
-                <Field label="Gender" htmlFor="gender">
-                  <SearchableSelect
-                    id="gender"
-                    options={GENDERS}
-                    value={gender}
-                    onChange={setGender}
-                    placeholder="Select"
-                  />
-                </Field>
-              </div>
-            </section>
-          )}
-
-          {step === 1 && (
-            <section className="space-y-6 animate-fade-in">
-              <SectionTitle icon={MapPin} title="What are you looking for?" />
-
-              <Field
-                label="Interested role"
-                required
-                error={errors.interestedRole}
-                htmlFor="role"
-                hint="Search across sales, service, spare parts, body shop, EV and more."
-              >
-                <SearchableSelect
-                  id="role"
-                  options={INTERESTED_ROLES}
-                  value={interestedRole}
-                  onChange={setInterestedRole}
-                  placeholder="Search for a role"
-                  error={!!errors.interestedRole}
-                />
-              </Field>
-
-              <Field
-                label="Current city"
-                required
-                error={errors.currentCity}
-                htmlFor="city"
-                hint="Not listed? Type your city and pick the custom option."
-              >
-                <SearchableSelect
-                  id="city"
-                  options={AUTO_HUB_CITIES}
-                  value={currentCity}
-                  onChange={setCurrentCity}
-                  placeholder="Search for your city"
-                  allowCustom
-                  error={!!errors.currentCity}
-                />
-              </Field>
-
-              <Field
-                label="Preferred job locations"
-                required
-                error={errors.preferredLocations}
-                hint="Choose up to 5. More locations means more matches."
-              >
-                <MultiSelect
-                  options={AUTO_HUB_CITIES}
-                  value={preferredLocations}
-                  onChange={setPreferredLocations}
-                  placeholder="Select preferred locations"
-                  max={5}
-                  error={!!errors.preferredLocations}
-                />
-              </Field>
-            </section>
-          )}
-
-          {step === 2 && (
-            <section className="space-y-6 animate-fade-in">
-              <SectionTitle icon={Briefcase} title={isFresher ? 'Your education' : 'Your experience'} />
-
-              {isFresher ? (
-                <>
-                  <div className="grid sm:grid-cols-2 gap-5">
-                    <Field
-                      label="Passing year"
-                      required
-                      error={errors.passingYear}
-                      htmlFor="passingYear"
-                    >
-                      <SearchableSelect
-                        id="passingYear"
-                        options={PASSING_YEARS.map(String)}
-                        value={passingYear}
-                        onChange={setPassingYear}
-                        placeholder="Select year"
-                        error={!!errors.passingYear}
-                      />
-                    </Field>
-
-                    <Field
-                      label="College / Institute"
-                      required
-                      error={errors.college}
-                      htmlFor="college"
-                    >
-                      <TextInput
-                        id="college"
-                        value={college}
-                        onChange={(e) => setCollege(e.target.value)}
-                        placeholder="Government Polytechnic, Pune"
-                        error={!!errors.college}
-                      />
-                    </Field>
-                  </div>
-
-                  <Field
-                    label="Internship or apprenticeship"
-                    htmlFor="internship"
-                    hint="Where did you train, and on what?"
-                  >
-                    <TextInput
-                      id="internship"
-                      value={internship}
-                      onChange={(e) => setInternship(e.target.value)}
-                      placeholder="6-month apprenticeship at Maruti service centre"
-                    />
-                  </Field>
-
-                  <Field
-                    label="Certifications"
-                    htmlFor="certifications"
-                    hint="OEM training, EV safety, diagnostics tools — anything relevant."
-                  >
-                    <TextInput
-                      id="certifications"
-                      value={certifications}
-                      onChange={(e) => setCertifications(e.target.value)}
-                      placeholder="Maruti L2 Technician, EV HV Safety Level 1"
-                    />
-                  </Field>
-                </>
-              ) : (
-                <>
-                  <Field
-                    label="Total experience"
-                    required
-                    error={errors.totalExperience}
-                    htmlFor="totalExperience"
-                  >
-                    <SearchableSelect
-                      id="totalExperience"
-                      options={EXPERIENCE_BANDS}
-                      value={totalExperience}
-                      onChange={setTotalExperience}
-                      placeholder="Select experience"
-                      error={!!errors.totalExperience}
-                    />
-                  </Field>
-
-                  {isNonAutomobile && (
-                    <Field
-                      label="Current industry"
-                      required
-                      error={errors.industry}
-                      htmlFor="industry"
-                    >
-                      <SearchableSelect
-                        id="industry"
-                        options={INDUSTRIES}
-                        value={industry}
-                        onChange={setIndustry}
-                        placeholder="Select your industry"
-                        error={!!errors.industry}
-                      />
-                    </Field>
-                  )}
-
-                  <div className="grid sm:grid-cols-2 gap-5">
-                    <Field
-                      label="Current company"
-                      required
-                      error={errors.currentCompany}
-                      htmlFor="currentCompany"
-                    >
-                      <TextInput
-                        id="currentCompany"
-                        value={currentCompany}
-                        onChange={(e) => setCurrentCompany(e.target.value)}
-                        placeholder="Company name"
-                        error={!!errors.currentCompany}
-                      />
-                    </Field>
-
-                    <Field
-                      label="Current designation"
-                      required
-                      error={errors.currentDesignation}
-                      htmlFor="currentDesignation"
-                    >
-                      <TextInput
-                        id="currentDesignation"
-                        value={currentDesignation}
-                        onChange={(e) => setCurrentDesignation(e.target.value)}
-                        placeholder="Service Advisor"
-                        error={!!errors.currentDesignation}
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-5">
-                    <Field
-                      label="Current salary"
-                      htmlFor="currentSalary"
-                      hint="Annual CTC in ₹"
-                    >
-                      <TextInput
-                        id="currentSalary"
-                        type="number"
-                        min={0}
-                        value={currentSalary}
-                        onChange={(e) => setCurrentSalary(e.target.value)}
-                        placeholder="360000"
-                      />
-                    </Field>
-
-                    <Field
-                      label="Expected salary"
-                      htmlFor="expectedSalary"
-                      hint="Annual CTC in ₹"
-                    >
-                      <TextInput
-                        id="expectedSalary"
-                        type="number"
-                        min={0}
-                        value={expectedSalary}
-                        onChange={(e) => setExpectedSalary(e.target.value)}
-                        placeholder="480000"
-                      />
-                    </Field>
-                  </div>
-
-                  <Field
-                    label="Notice period"
-                    required
-                    error={errors.noticePeriodBand}
-                    htmlFor="notice"
-                  >
-                    <SearchableSelect
-                      id="notice"
-                      options={NOTICE_PERIODS}
-                      value={noticePeriodBand}
-                      onChange={setNoticePeriodBand}
-                      placeholder="Select notice period"
-                      error={!!errors.noticePeriodBand}
-                    />
-                  </Field>
-
-                  {isAutomobile && (
-                    <Field
-                      label="Automobile brand experience"
-                      required
-                      error={errors.brandExperience}
-                      hint="Select every brand you have worked with."
-                    >
-                      <MultiSelect
-                        options={OEM_BRANDS}
-                        value={brandExperience}
-                        onChange={setBrandExperience}
-                        placeholder="Select brands"
-                        error={!!errors.brandExperience}
-                      />
-                    </Field>
-                  )}
-                </>
-              )}
-            </section>
-          )}
-
-          {step === 3 && (
-            <section className="space-y-6 animate-fade-in">
-              <SectionTitle icon={FileText} title="Documents and preferences" />
-
-              <Field label="Resume" hint="PDF, DOC or DOCX. Up to 5MB.">
-                <FileUpload
-                  accept=".pdf,.doc,.docx"
-                  maxBytes={MAX_RESUME_BYTES}
-                  value={resume?.url}
-                  fileName={resume?.name}
-                  onChange={setResume}
-                  label="Upload your resume"
-                  hint="Drag and drop, or click to browse"
-                />
-              </Field>
-
-              <Field label="Profile photo" hint="JPG, PNG or WEBP. Up to 2MB.">
-                <FileUpload
-                  accept=".jpg,.jpeg,.png,.webp"
-                  maxBytes={MAX_IMAGE_BYTES}
-                  value={photo?.url}
-                  fileName={photo?.name}
-                  onChange={setPhoto}
-                  label="Upload a photo"
-                  hint="A clear headshot works best"
-                />
-              </Field>
-
-              <div className="grid sm:grid-cols-2 gap-5">
-                <Field label="Do you have a driving licence?" required>
-                  <YesNo
-                    name="drivingLicense"
-                    value={drivingLicense}
-                    onChange={setDrivingLicense}
-                  />
-                </Field>
-
-                <Field label="Do you own a vehicle?" required>
-                  <YesNo name="ownVehicle" value={ownVehicle} onChange={setOwnVehicle} />
-                </Field>
-              </div>
-
-              <Field
-                label="Languages known"
-                required
-                error={errors.languages}
-                hint="Field and showroom roles often need a specific local language."
-              >
-                <MultiSelect
-                  options={LANGUAGES}
-                  value={languages}
-                  onChange={setLanguages}
-                  placeholder="Select languages"
-                  max={8}
-                  error={!!errors.languages}
-                />
-              </Field>
-
-              <Field label="Referral code" htmlFor="referral" hint="Optional.">
-                <TextInput
-                  id="referral"
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value)}
-                  placeholder="MOTO1234"
-                />
-              </Field>
-
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={acceptTerms}
-                  onChange={(e) => setAcceptTerms(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-line cursor-pointer accent-brand-600"
-                />
-                <span className="text-[13px] text-ink-muted leading-[1.6]">
-                  I confirm these details are accurate and accept the{' '}
-                  <a href="/terms" className="font-semibold text-brand-600 hover:text-brand-700">
-                    Terms &amp; Conditions
-                  </a>
-                  .
-                </span>
-              </label>
-              {errors.acceptTerms && (
-                <p className="-mt-3 text-[12.5px] font-medium text-critical" role="alert">
-                  {errors.acceptTerms}
-                </p>
-              )}
-            </section>
-          )}
+          {body}
 
           {formError && (
             <p className="mt-6 text-[13.5px] font-medium text-critical animate-fade-in" role="alert">
@@ -652,66 +226,105 @@ export default function CandidateOnboardingPage() {
             </p>
           )}
 
-          <div className="flex items-center justify-between gap-3 mt-9 pt-6 border-t border-line">
-            <button
-              type="button"
-              onClick={back}
-              disabled={step === 0 || submitting}
-              className="inline-flex items-center gap-2 text-[14px] font-semibold text-ink-muted hover:text-brand-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </button>
-
-            {step < STEPS.length - 1 ? (
+          {step > 0 && (
+            <div className="flex items-center justify-between gap-3 mt-9 pt-6 border-t border-line">
               <button
                 type="button"
-                onClick={next}
-                className="inline-flex items-center gap-2 grad-brand text-white font-semibold text-[14.5px] rounded-[14px] px-6 py-3 shadow-brand transition-all duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-e4"
-              >
-                Continue
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={submit}
+                onClick={back}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 grad-brand text-white font-semibold text-[14.5px] rounded-[14px] px-6 py-3 shadow-brand transition-all duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-e4 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0"
+                className="inline-flex items-center gap-2 text-[14px] font-semibold text-ink-muted hover:text-brand-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  <>
-                    <BadgeCheck className="w-4 h-4" />
-                    Complete profile
-                  </>
-                )}
+                <ArrowLeft className="w-4 h-4" />
+                Previous
               </button>
-            )}
-          </div>
+
+              {step < LAST_STEP ? (
+                <button
+                  type="button"
+                  onClick={next}
+                  className="inline-flex items-center gap-2 grad-brand text-white font-semibold text-[14.5px] rounded-[14px] px-6 py-3 shadow-brand transition-all duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-e4"
+                >
+                  Save &amp; continue
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={submit}
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 grad-brand text-white font-semibold text-[14.5px] rounded-[14px] px-6 py-3 shadow-brand transition-all duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-e4 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving…
+                    </>
+                  ) : (
+                    <>
+                      <BadgeCheck className="w-4 h-4" />
+                      Finish profile
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function SectionTitle({
-  icon: Icon,
-  title,
-}: {
-  icon: typeof UserCircle2;
-  title: string;
-}) {
-  return (
-    <div className="flex items-center gap-2.5 pb-1">
-      <span className="w-9 h-9 rounded-[12px] bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-        <Icon className="w-4.5 h-4.5 text-brand-600" strokeWidth={2.1} />
-      </span>
-      <h2 className="text-[17px] font-bold text-ink tracking-[-0.02em]">{title}</h2>
-    </div>
-  );
+/** Maps a saved candidate row back onto wizard state. */
+function hydrate(base: WizardState, d: Record<string, unknown>): WizardState {
+  const str = (v: unknown) => (v == null ? '' : String(v));
+  const list = (v: unknown) => (Array.isArray(v) ? (v as string[]) : []);
+  const file = (url: unknown, name: unknown) =>
+    url ? { url: String(url), name: name ? String(name) : 'Uploaded file' } : null;
+  const account = (d.account ?? {}) as Record<string, unknown>;
+
+  return {
+    ...base,
+    fullName: str(account.name),
+    email: str(account.email),
+    phone: str(account.phone),
+    dateOfBirth: d.dateOfBirth ? String(d.dateOfBirth).slice(0, 10) : '',
+    gender: str(d.gender),
+    currentState: str(d.currentState),
+    currentCity: str(d.currentCity),
+    panNumber: str(d.panNumber),
+    panCard: file(d.panCardUrl, 'PAN card'),
+    photo: file(account.profileImage, 'Profile photo'),
+
+    candidateType: str(d.candidateType),
+    qualification: str(d.qualification),
+    passingYear: str(d.passingYear),
+    college: str(d.college),
+    internship: str(d.internship),
+    certifications: str(d.certifications),
+    totalExperience: str(d.totalExperience),
+    currentCompany: str(d.currentCompany),
+    currentDesignation: str(d.currentDesignation),
+    currentSalary: str(d.currentSalary),
+    noticePeriodBand: str(d.noticePeriodBand),
+    industry: str(d.industry),
+    drivingLicense: typeof d.drivingLicense === 'boolean' ? d.drivingLicense : null,
+    ownVehicle: typeof d.ownVehicle === 'boolean' ? d.ownVehicle : null,
+
+    jobCategories: list(d.jobCategories),
+    brandExperience: list(d.brandExperience),
+    skills: list(d.skills),
+
+    resume: file(d.resumeUrl, d.resumeName),
+
+    interestedRole: str(d.interestedRole),
+    preferredBrand: str(d.preferredBrand),
+    preferredState: str(d.preferredState),
+    preferredCity: str(d.preferredCity),
+    expectedSalary: str(d.expectedSalary),
+    employmentType: str(d.employmentType),
+    languages: list(d.languages),
+    referralCode: str(d.referralCode),
+    acceptTerms: Boolean(d.acceptedTermsAt),
+  };
 }

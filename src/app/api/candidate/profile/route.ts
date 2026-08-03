@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Candidate profile not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ candidate });
+    return NextResponse.json({ data: candidate });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
   }
@@ -124,7 +124,7 @@ export async function PUT(req: NextRequest) {
     const score = calculateProfileScore(updated, education, workExperience, skills);
     await prisma.candidate.update({ where: { id: candidate.id }, data: { profileScore: score } });
 
-    return NextResponse.json({ candidate: { ...updated, profileScore: score }, message: "Profile updated successfully" });
+    return NextResponse.json({ data: { ...updated, profileScore: score }, message: "Profile updated successfully" });
   } catch (error) {
     console.error("Profile update error:", error);
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });

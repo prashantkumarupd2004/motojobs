@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '@/lib/http';
 
 interface ProfileData {
   id?: string;
@@ -27,7 +28,7 @@ export function useProfile() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/candidate/profile');
+      const res = await apiFetch('/api/candidate/profile');
       if (res.ok) {
         const data = await res.json();
         setProfile(data.data || {});
@@ -46,7 +47,7 @@ export function useProfile() {
   }, [fetchProfile]);
 
   const updateProfile = useCallback(async (updates: Partial<ProfileData>) => {
-    const res = await fetch('/api/candidate/profile', {
+    const res = await apiFetch('/api/candidate/profile', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),

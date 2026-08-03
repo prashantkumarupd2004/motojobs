@@ -570,9 +570,43 @@ export const INDIAN_STATES = [
   'Tamil Nadu',
   'Telangana',
   'Uttar Pradesh',
-  'Uttarakhand',
-  'West Bengal',
 ] as const;
+
+/**
+ * Cities offered per state in onboarding, where state and city are picked
+ * separately. `AUTO_HUB_CITIES` stores them pre-joined ("Pune, Maharashtra")
+ * and cannot be split reliably, so the mapping is maintained here. Every auto
+ * hub above appears under its state, plus the other major cities candidates
+ * actually live in.
+ */
+export const CITIES_BY_STATE: Record<string, string[]> = {
+  'Andhra Pradesh': ['Visakhapatnam', 'Vijayawada', 'Guntur', 'Tirupati', 'Nellore', 'Kurnool'],
+  Assam: ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat'],
+  Bihar: ['Patna', 'Gaya', 'Muzaffarpur', 'Bhagalpur', 'Darbhanga'],
+  Chandigarh: ['Chandigarh'],
+  Chhattisgarh: ['Raipur', 'Bhilai', 'Bilaspur', 'Korba'],
+  Delhi: ['New Delhi', 'Delhi NCR', 'Dwarka', 'Rohini', 'Okhla'],
+  Goa: ['Panaji', 'Margao', 'Verna', 'Vasco da Gama'],
+  Gujarat: ['Ahmedabad', 'Sanand', 'Halol', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar', 'Jamnagar'],
+  Haryana: ['Gurugram', 'Manesar', 'Faridabad', 'Bawal', 'Rewari', 'Panipat', 'Hisar', 'Ambala'],
+  'Himachal Pradesh': ['Shimla', 'Baddi', 'Solan', 'Dharamshala'],
+  'Jammu & Kashmir': ['Jammu', 'Srinagar'],
+  Jharkhand: ['Jamshedpur', 'Ranchi', 'Dhanbad', 'Bokaro'],
+  Karnataka: ['Bengaluru', 'Dharwad', 'Mysuru', 'Hubballi', 'Mangaluru', 'Belagavi'],
+  Kerala: ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur', 'Kannur'],
+  'Madhya Pradesh': ['Indore', 'Pithampur', 'Bhopal', 'Gwalior', 'Jabalpur', 'Ujjain'],
+  Maharashtra: ['Pune', 'Chakan', 'Mumbai', 'Nashik', 'Aurangabad', 'Nagpur', 'Thane', 'Navi Mumbai', 'Kolhapur', 'Solapur'],
+  Odisha: ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Sambalpur'],
+  Puducherry: ['Puducherry'],
+  Punjab: ['Ludhiana', 'Amritsar', 'Jalandhar', 'Mohali', 'Patiala'],
+  Rajasthan: ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Alwar', 'Bhiwadi'],
+  'Tamil Nadu': ['Chennai', 'Hosur', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Sriperumbudur'],
+  Telangana: ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar'],
+  'Uttar Pradesh': ['Noida', 'Greater Noida', 'Ghaziabad', 'Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Meerut'],
+  Uttarakhand: ['Rudrapur', 'Pantnagar', 'Dehradun', 'Haridwar', 'Haldwani'],
+  'West Bengal': ['Kolkata', 'Howrah', 'Siliguri', 'Durgapur', 'Asansol'],
+};
+
 
 export const COMPANY_DOCUMENT_TYPES = [
   { id: 'GST_CERTIFICATE', label: 'GST Certificate' },
@@ -587,3 +621,13 @@ export const COMPANY_DOCUMENT_TYPES = [
  * Validates shape only — authoritative verification needs the GSTN API.
  */
 export const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$/;
+
+/** PAN: 5 letters, 4 digits, 1 letter. Shape check only. */
+export const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+
+/**
+ * Profile completion after finishing each onboarding step, indexed by step.
+ * Shared by the wizard progress bar, the onboarding API and the dashboard card
+ * so the three can never disagree.
+ */
+export const STEP_COMPLETION = [10, 25, 45, 65, 80, 90, 100] as const;

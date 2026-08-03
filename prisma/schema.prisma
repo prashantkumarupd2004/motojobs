@@ -145,14 +145,25 @@ model Candidate {
   /// FRESHER | AUTOMOBILE | NON_AUTOMOBILE — drives which fields below apply.
   candidateType     String?
   isProfileComplete Boolean @default(false)
+  /// Furthest onboarding step reached, so a dropped session can resume.
+  profileStep       Int     @default(0)
 
   dateOfBirth        DateTime?
   gender             String?
   interestedRole     String?
   currentCity        String?
+  currentState       String?
   /// JSON string array. SQLite has no native list type; parse before use.
   preferredLocations String?
   qualification      String?
+
+  /// Uppercase PAN (ABCDE1234F). Aadhaar is deliberately not collected.
+  panNumber  String?
+  /// Private S3 key path served through /api/files.
+  panCardUrl String?
+
+  /// JSON string array of JOB_CATEGORIES ids.
+  jobCategories String?
 
   // Fresher branch
   passingYear    Int?
@@ -178,6 +189,14 @@ model Candidate {
   languages       String?
   referralCode    String?
   acceptedTermsAt DateTime?
+
+  // Job preferences (onboarding step 7)
+  preferredRole  String?
+  preferredBrand String?
+  preferredState String?
+  preferredCity  String?
+  /// One of JOB_TYPES.
+  employmentType String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
