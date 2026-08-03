@@ -147,8 +147,16 @@ export default function Footer() {
           <p className="text-[#94A3B8] text-[13px]">
             © {year} MotoJobs.in. All rights reserved.
           </p>
-          <p className="text-[#94A3B8] text-[13px]">
-            Made in India 🇮🇳 for the Automobile Industry
+          <p className="text-[#94A3B8] text-[13px] text-center">
+            Developed &amp; managed under{' '}
+            <a
+              href="https://infotronicsmedia.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#2563EB] hover:text-[#1D4ED8] font-medium hover:underline transition-colors duration-200"
+            >
+              Infotronics Media Pvt Ltd
+            </a>
           </p>
         </div>
       </div>
