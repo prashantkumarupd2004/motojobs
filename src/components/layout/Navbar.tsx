@@ -2,44 +2,59 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { Menu, X, User, LogOut, ChevronDown } from 'lucide-react';
+import {
+  Menu, X, User, LogOut, ChevronDown,
+  Briefcase, LayoutDashboard, Bell,
+  Home, Building2, BookOpen, Phone, Zap,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import NotificationBell from './NotificationBell';
 import { usePathname } from 'next/navigation';
 
-const NAV_LINKS: [string, string][] = [
-  ['Home',            '/'],
-  ['Jobs',            '/jobs'],
-  ['Companies',       '/companies'],
-  ['Career Advice',   '/blog'],
-  ['Contact Us',      '/contact'],
+const NAV_LINKS: { label: string; href: string; icon: React.ReactNode }[] = [
+  { label: 'Home',          href: '/',          icon: <Home className="w-4 h-4" /> },
+  { label: 'Jobs',          href: '/jobs',       icon: <Briefcase className="w-4 h-4" /> },
+  { label: 'Companies',     href: '/companies',  icon: <Building2 className="w-4 h-4" /> },
+  { label: 'Career Advice', href: '/blog',       icon: <BookOpen className="w-4 h-4" /> },
+  { label: 'Contact Us',    href: '/contact',    icon: <Phone className="w-4 h-4" /> },
 ];
-
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled]     = useState(false);
   const { user, logout } = useAuth();
-  const pathname = usePathname();
-  const menuRef = useRef<HTMLDivElement>(null);
+  const pathname  = usePathname();
+  const menuRef   = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
 
+  /* ── Scroll detection ── */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    const onScroll = () => setScrolled(window.scrollY > 10);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  /* ── Close user menu on outside click ── */
   useEffect(() => {
-    const onClickOutside = (e: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
       }
     };
-    if (userMenuOpen) document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
+    if (userMenuOpen) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [userMenuOpen]);
+
+  /* ── Lock body scroll when mobile drawer open ── */
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
+  /* ── Close mobile on route change ── */
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const getDashboardLink = () => {
     if (!user) return '/login';
@@ -48,189 +63,326 @@ export default function Navbar() {
     return '/admin/dashboard';
   };
 
-  const isActive = (href: string) => {
-    if (href === '/') return pathname === '/';
-    return pathname?.startsWith(href);
-  };
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname?.startsWith(href);
+
+  /* ── initials helper ── */
+  const initials = user
+    ? user.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
+    : '';
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-300 ${
-        scrolled
-          ? 'shadow-[0_1px_3px_rgba(15,23,42,0.06),0_4px_12px_rgba(15,23,42,0.04)]'
-          : ''
-      } border-b border-[#E8EEF8]`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-[84px]">
+    <>
+      {/* ════════════════════════════════════════
+          NAV BAR
+          ════════════════════════════════════════ */}
+      <nav
+        className={[
+          'fixed top-0 left-0 right-0 z-50 transition-all duration-500',
+          scrolled
+            ? 'bg-white/90 backdrop-blur-2xl shadow-[0_2px_20px_rgba(15,23,42,0.08)] border-b border-white/60'
+            : 'bg-white/80 backdrop-blur-xl border-b border-slate-100/80',
+        ].join(' ')}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-[72px]">
 
-          {/* ── Logo ── */}
-          <Link href="/" className="flex items-center group shrink-0 py-1">
-            <Image
-              src="/logo-motojobs.png"
-              alt="MotoJobs.in"
-              width={1341}
-              height={268}
-              preload
-              className="h-9 sm:h-10 w-auto"
-            />
-          </Link>
+            {/* ── Logo ── */}
+            <Link href="/" className="flex items-center gap-2 shrink-0 group">
+              <Image
+                src="/logo-motojobs.png"
+                alt="MotoJobs.in"
+                width={1341}
+                height={268}
+                priority
+                className="h-8 sm:h-9 w-auto transition-opacity duration-200 group-hover:opacity-80"
+              />
+            </Link>
 
-          {/* ── Desktop Nav ── */}
-          <div className="hidden md:flex items-center gap-0.5">
-            {NAV_LINKS.map(([label, href]) => {
+            {/* ── Desktop Nav Links ── */}
+            <div className="hidden lg:flex items-center">
+              {/* Pill container */}
+              <div className="flex items-center bg-slate-50/80 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
+                {NAV_LINKS.map(({ label, href }) => {
+                  const active = isActive(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={[
+                        'relative px-4 py-2 text-[13px] font-semibold rounded-xl transition-all duration-200 select-none whitespace-nowrap',
+                        active
+                          ? 'bg-white text-[#1F5D95] shadow-[0_1px_4px_rgba(15,23,42,0.10),0_0_0_1px_rgba(31,93,149,0.08)]'
+                          : 'text-slate-500 hover:text-slate-800 hover:bg-white/60',
+                      ].join(' ')}
+                    >
+                      {label}
+                      {active && (
+                        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#1F5D95] opacity-70" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── Right Side ── */}
+            <div className="hidden lg:flex items-center gap-2">
+              {user ? (
+                <>
+                  {/* Notification Bell */}
+                  <div className="w-9 h-9 flex items-center justify-center">
+                    <NotificationBell />
+                  </div>
+
+                  {/* Dashboard shortcut */}
+                  <Link
+                    href={getDashboardLink()}
+                    className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold text-slate-600 hover:text-[#1F5D95] hover:bg-slate-50 rounded-xl transition-all duration-150"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    Dashboard
+                  </Link>
+
+                  {/* User avatar menu */}
+                  <div className="relative" ref={menuRef}>
+                    <button
+                      id="user-menu-btn"
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      className={[
+                        'flex items-center gap-2 rounded-2xl pl-1 pr-3 py-1 border transition-all duration-200',
+                        userMenuOpen
+                          ? 'border-[#1F5D95]/30 bg-blue-50 shadow-[0_0_0_3px_rgba(31,93,149,0.08)]'
+                          : 'border-slate-200 bg-white hover:border-[#1F5D95]/40 hover:shadow-[0_2px_10px_rgba(31,93,149,0.10)]',
+                      ].join(' ')}
+                      aria-expanded={userMenuOpen}
+                      aria-haspopup="true"
+                    >
+                      {/* Avatar */}
+                      <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#1F5D95] to-[#0A3255] flex items-center justify-center text-[11px] font-bold text-white tracking-wider shadow-inner">
+                        {initials}
+                      </div>
+                      <span className="text-[13px] font-semibold text-slate-800 max-w-[80px] truncate">
+                        {user.name.split(' ')[0]}
+                      </span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    {/* Dropdown */}
+                    {userMenuOpen && (
+                      <div
+                        className="absolute right-0 mt-2.5 w-56 bg-white border border-slate-100 rounded-2xl shadow-[0_16px_40px_rgba(15,23,42,0.12),0_0_0_1px_rgba(15,23,42,0.04)] p-1.5 z-50 animate-[menuIn_0.15s_ease-out]"
+                        style={{ transformOrigin: 'top right' }}
+                      >
+                        {/* User info header */}
+                        <div className="px-3 py-2.5 mb-1 border-b border-slate-100">
+                          <p className="text-[13px] font-semibold text-slate-800 truncate">{user.name}</p>
+                          <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
+                        </div>
+
+                        <Link
+                          href={getDashboardLink()}
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50 hover:text-[#1F5D95] rounded-xl transition-all duration-150"
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <User className="w-3.5 h-3.5 text-[#1F5D95]" />
+                          </div>
+                          Dashboard
+                        </Link>
+
+                        <div className="my-1 border-t border-slate-100" />
+
+                        <button
+                          onClick={() => { setUserMenuOpen(false); logout(); }}
+                          className="flex items-center gap-2.5 w-full px-3 py-2.5 text-[13px] font-medium text-red-500 hover:bg-red-50/70 rounded-xl transition-all duration-150"
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
+                            <LogOut className="w-3.5 h-3.5 text-red-500" />
+                          </div>
+                          Sign out
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-5 py-2.5 text-[13.5px] font-semibold text-slate-700 hover:text-[#1F5D95] border border-slate-200 hover:border-[#1F5D95]/40 rounded-xl bg-white hover:bg-blue-50/50 transition-all duration-200"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="flex items-center gap-2 px-5 py-2.5 text-[13.5px] font-semibold text-white bg-gradient-to-r from-[#1F5D95] to-[#0F4C81] hover:from-[#2265a3] hover:to-[#1F5D95] rounded-xl shadow-[0_2px_12px_rgba(15,76,129,0.35)] hover:shadow-[0_4px_16px_rgba(15,76,129,0.40)] transition-all duration-200 active:scale-[0.97]"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-white" />
+                    Get Started
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* ── Mobile hamburger ── */}
+            <button
+              id="mobile-menu-btn"
+              className="lg:hidden relative w-10 h-10 flex items-center justify-center rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all duration-150"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="Toggle navigation"
+              aria-expanded={mobileOpen}
+            >
+              <span
+                className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${mobileOpen ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'}`}
+              >
+                <X className="w-5 h-5" />
+              </span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${mobileOpen ? 'opacity-0 -rotate-90' : 'opacity-100 rotate-0'}`}
+              >
+                <Menu className="w-5 h-5" />
+              </span>
+            </button>
+
+          </div>
+        </div>
+      </nav>
+
+      {/* ════════════════════════════════════════
+          MOBILE DRAWER OVERLAY
+          ════════════════════════════════════════ */}
+      <div
+        className={`fixed inset-0 z-40 transition-all duration-300 lg:hidden ${mobileOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
+      >
+        {/* Backdrop */}
+        <div
+          className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${mobileOpen ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setMobileOpen(false)}
+        />
+
+        {/* Drawer panel */}
+        <div
+          ref={drawerRef}
+          className={`absolute top-0 right-0 h-full w-[82vw] max-w-[340px] bg-white shadow-[0_0_60px_rgba(15,23,42,0.20)] flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        >
+          {/* Drawer header */}
+          <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
+            <Link href="/" onClick={() => setMobileOpen(false)}>
+              <Image
+                src="/logo-motojobs.png"
+                alt="MotoJobs.in"
+                width={1341}
+                height={268}
+                className="h-7 w-auto"
+              />
+            </Link>
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Drawer nav links */}
+          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+            {NAV_LINKS.map(({ label, href, icon }, i) => {
               const active = isActive(href);
               return (
                 <Link
                   key={href}
                   href={href}
-                  className={`relative px-3 py-2 text-[13.5px] font-medium rounded-[8px] transition-colors duration-150 ${
+                  onClick={() => setMobileOpen(false)}
+                  style={{ animationDelay: `${i * 40}ms` }}
+                  className={[
+                    'flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-semibold transition-all duration-150',
+                    'animate-[fadeSlideIn_0.3s_ease_both]',
                     active
-                      ? 'text-[#2563EB]'
-                      : 'text-[#475569] hover:text-[#0F172A] hover:bg-[#F8FAFC]'
-                  }`}
+                      ? 'bg-[#EFF6FF] text-[#1F5D95]'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50',
+                  ].join(' ')}
                 >
+                  <span className={`${active ? 'text-[#1F5D95]' : 'text-slate-400'} transition-colors`}>
+                    {icon}
+                  </span>
                   {label}
-                  {/* Active underline */}
                   {active && (
-                    <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-[#2563EB] rounded-full" />
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1F5D95]" />
                   )}
                 </Link>
               );
             })}
-          </div>
+          </nav>
 
-          {/* ── Right side ── */}
-          <div className="hidden md:flex items-center gap-2">
+          {/* Drawer footer — auth actions */}
+          <div className="px-4 pb-6 pt-4 border-t border-slate-100 space-y-2">
             {user ? (
               <>
-                <NotificationBell />
+                {/* User info */}
+                <div className="flex items-center gap-3 px-3 py-3 mb-1 bg-slate-50 rounded-xl">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1F5D95] to-[#0A3255] flex items-center justify-center text-[13px] font-bold text-white shadow-inner shrink-0">
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-slate-800 truncate">{user.name}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
+                  </div>
+                </div>
+
                 <Link
                   href={getDashboardLink()}
-                  className="px-3 py-2 text-[13.5px] font-medium text-[#475569] hover:text-[#0F172A] hover:bg-[#F8FAFC] rounded-[8px] transition-all duration-150"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-[14px] font-semibold text-slate-700 hover:text-[#1F5D95] bg-white border border-slate-200 rounded-xl hover:border-[#1F5D95]/30 hover:bg-blue-50/40 transition-all duration-150"
                 >
+                  <LayoutDashboard className="w-4 h-4" />
                   Dashboard
                 </Link>
-                <div className="relative" ref={menuRef}>
-                  <button
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center gap-2 bg-white border border-[#E2E8F0] rounded-full pl-1 pr-3 py-1 hover:border-[#BFDBFE] hover:shadow-[0_2px_8px_rgba(37,99,235,0.08)] transition-all duration-200"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-[#2563EB] flex items-center justify-center text-[12px] font-bold text-white">
-                      {user.name[0]}
-                    </div>
-                    <span className="text-[13px] font-semibold text-[#0F172A]">{user.name.split(' ')[0]}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 text-[#94A3B8] transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-52 bg-white border border-[#E2E8F0] rounded-[14px] shadow-[0_8px_24px_rgba(15,23,42,0.10)] animate-scale-in origin-top-right p-1 z-50">
-                      <Link
-                        href={getDashboardLink()}
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2.5 text-[13px] font-medium text-[#334155] hover:bg-[#F8FAFC] hover:text-[#0F172A] rounded-[10px] transition-all duration-150"
-                      >
-                        <User className="w-4 h-4" /> Dashboard
-                      </Link>
-                      <button
-                        onClick={logout}
-                        className="flex items-center gap-2.5 w-full px-3 py-2.5 text-[13px] font-medium text-[#EF4444] hover:bg-[#FEF2F2] rounded-[10px] transition-all duration-150"
-                      >
-                        <LogOut className="w-4 h-4" /> Sign out
-                      </button>
-                    </div>
-                  )}
-                </div>
+
+                <button
+                  onClick={() => { setMobileOpen(false); logout(); }}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-[14px] font-semibold text-red-500 hover:text-red-600 bg-white border border-red-100 rounded-xl hover:bg-red-50 transition-all duration-150"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign out
+                </button>
               </>
             ) : (
               <>
-                {/* Login — outlined pill button */}
                 <Link
                   href="/login"
-                  className="px-5 py-2 text-[13.5px] font-semibold text-[#0F172A] border border-[#CBD5E1] rounded-full hover:border-[#94A3B8] hover:bg-[#F8FAFC] transition-all duration-150"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-center w-full py-3 text-[14.5px] font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all duration-150"
                 >
-                  Login
+                  Log in
                 </Link>
-                {/* Register — solid blue */}
                 <Link
                   href="/register"
-                  className="flex items-center gap-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13.5px] font-semibold px-5 py-2 rounded-full transition-all duration-150 shadow-[0_1px_3px_rgba(37,99,235,0.20)]"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full py-3 text-[14.5px] font-semibold text-white bg-gradient-to-r from-[#1F5D95] to-[#0F4C81] rounded-xl shadow-[0_4px_14px_rgba(15,76,129,0.35)] hover:shadow-[0_6px_18px_rgba(15,76,129,0.40)] transition-all duration-200 active:scale-[0.97]"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <line x1="19" y1="8" x2="19" y2="14" />
-                    <line x1="22" y1="11" x2="16" y2="11" />
-                  </svg>
-                  Register
+                  <Zap className="w-4 h-4 fill-white" />
+                  Get Started — It's Free
                 </Link>
               </>
             )}
           </div>
-
-          {/* ── Mobile menu button ── */}
-          <button
-            className="md:hidden w-9 h-9 flex items-center justify-center text-[#475569] hover:text-[#0F172A] hover:bg-[#F8FAFC] rounded-[8px] transition-all duration-150"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
         </div>
       </div>
 
-      {/* ── Mobile menu ── */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-[#E8EEF8] bg-white px-4 py-3 space-y-0.5 shadow-[0_8px_24px_rgba(15,23,42,0.06)] animate-fade-in">
-          {NAV_LINKS.map(([label, href]) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileOpen(false)}
-              className={`flex items-center text-[14.5px] font-medium px-3 py-3 rounded-[10px] transition-all duration-150 ${
-                isActive(href)
-                  ? 'bg-[#EFF6FF] text-[#2563EB]'
-                  : 'text-[#334155] hover:text-[#0F172A] hover:bg-[#F8FAFC]'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-          {user ? (
-            <>
-              <Link
-                href={getDashboardLink()}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center text-[14.5px] font-medium text-[#334155] hover:text-[#0F172A] hover:bg-[#F8FAFC] px-3 py-3 rounded-[10px] transition-all duration-150"
-              >
-                Dashboard
-              </Link>
-              <button
-                onClick={logout}
-                className="w-full text-left text-[14.5px] font-medium text-[#EF4444] hover:bg-[#FEF2F2] px-3 py-3 rounded-[10px] transition-all duration-150"
-              >
-                Sign out
-              </button>
-            </>
-          ) : (
-            <div className="flex gap-2 pt-2 pb-1">
-              <Link
-                href="/login"
-                onClick={() => setMobileOpen(false)}
-                className="flex-1 text-center border border-[#CBD5E1] text-[#0F172A] font-semibold py-2.5 rounded-full text-[14px] hover:bg-[#F8FAFC] transition-all duration-150"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileOpen(false)}
-                className="flex-1 text-center bg-[#2563EB] text-white font-semibold py-2.5 rounded-full text-[14px] shadow-[0_2px_8px_rgba(37,99,235,0.25)]"
-              >
-                Register
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-    </nav>
+      {/* ── CSS keyframes (scoped, no Tailwind needed) ── */}
+      <style>{`
+        @keyframes menuIn {
+          from { opacity: 0; transform: scale(0.95) translateY(-6px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0); }
+        }
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateX(14px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
+    </>
   );
 }
