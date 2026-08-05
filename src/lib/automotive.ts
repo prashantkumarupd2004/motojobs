@@ -340,7 +340,7 @@ export const AUTO_HUB_CITIES = [
 
 export const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Apprenticeship', 'Internship'] as const;
 
-export const WORK_MODES = ['On-site', 'Field', 'Hybrid'] as const;
+export const WORK_MODES = ['Onsite', 'Hybrid', 'Remote'] as const;
 
 export const EXPERIENCE_LEVELS = ['Fresher', '0-1 years', '1-3 years', '3-5 years', '5-10 years', '10+ years'] as const;
 
@@ -672,3 +672,107 @@ export const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
  * so the three can never disagree.
  */
 export const STEP_COMPLETION = [10, 25, 45, 65, 80, 90, 100] as const;
+
+/* ------------------------------------------------------------------ *
+ * Employer onboarding taxonomy
+ * ------------------------------------------------------------------ */
+
+/**
+ * Employer wizard progress: Welcome, Company Information, Company Address,
+ * Hiring Preferences. Same contract as STEP_COMPLETION on the candidate side.
+ */
+export const EMPLOYER_STEP_COMPLETION = [10, 40, 70, 100] as const;
+
+/**
+ * What kind of automotive business the employer runs. Persisted on
+ * `Company.industry`, so these strings are stable and must not be renamed.
+ *
+ * Distinct from EMPLOYER_TYPES, which is the older vocabulary still used by the
+ * public /companies filter; this is the list the onboarding wizard offers.
+ */
+export const COMPANY_TYPES = [
+  'Automobile Dealership',
+  'Workshop',
+  'OEM',
+  'EV Company',
+  'Manufacturing Company',
+  'Spare Parts Company',
+  'Service Centre',
+  'Fleet Company',
+  'Logistics Company',
+  'Other',
+] as const;
+
+/** Roles an employer recruits for. Stored as a JSON array on the company. */
+export const HIRING_CATEGORIES = [
+  'Sales Executive',
+  'Technician',
+  'Mechanic',
+  'Service Advisor',
+  'Workshop Manager',
+  'Service Manager',
+  'Driver',
+  'CRM Executive',
+  'Spare Parts Executive',
+  'HR',
+  'Accounts',
+  'Finance',
+  'Insurance',
+  'Marketing',
+  'EV Technician',
+  'Body Shop',
+  'Painter',
+  'Warranty Executive',
+] as const;
+
+export const HIRING_FREQUENCIES = ['Daily', 'Weekly', 'Monthly', 'Occasionally'] as const;
+
+/**
+ * Head-count bands shown to employers. Deliberately separate from
+ * COMPANY_SIZES, which the public company directory already renders.
+ */
+export const EMPLOYER_COMPANY_SIZES = [
+  '1-10 Employees',
+  '11-25 Employees',
+  '26-50 Employees',
+  '51-100 Employees',
+  '100+ Employees',
+] as const;
+
+export const JOINING_TIMELINES = [
+  'Immediate',
+  'Within 15 days',
+  'Within 30 days',
+  'Within 60 days',
+  'Flexible',
+] as const;
+
+/** Perks offered with a role. Stored as a JSON array on the job. */
+export const JOB_BENEFITS = [
+  'Provident Fund (PF)',
+  'ESI',
+  'Health Insurance',
+  'Performance Incentives',
+  'Sales Commission',
+  'Overtime Pay',
+  'Annual Bonus',
+  'Paid Leave',
+  'Uniform Provided',
+  'Tools Provided',
+  'Canteen / Meals',
+  'Transport Allowance',
+  'Accommodation',
+  'Mobile / Travel Reimbursement',
+  'OEM Training & Certification',
+  'Career Growth Path',
+] as const;
+
+/** Where an interview happens. Persisted on `Interview.mode`. */
+export const INTERVIEW_MODES = [
+  { id: 'IN_PERSON', label: 'In person', hint: 'At your showroom or workshop' },
+  { id: 'PHONE', label: 'Phone call', hint: 'A telephonic round' },
+  { id: 'VIDEO', label: 'Video call', hint: 'Share a meeting link' },
+] as const;
+
+export type InterviewModeId = (typeof INTERVIEW_MODES)[number]['id'];
+

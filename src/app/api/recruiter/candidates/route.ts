@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search") || "";
     const skills = searchParams.get("skills") || "";
     const location = searchParams.get("location") || "";
+    const state = searchParams.get("state") || "";
     const experience = searchParams.get("experience") || "";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "12");
@@ -37,21 +38,33 @@ export async function GET(req: NextRequest) {
     const where: Record<string, unknown> = { isOpenToWork: true };
 
     if (search) {
-      where.user = { name: { contains: search, mode: "insensitive" } };
+      // Matches the candidate's name or the role they are looking for, which is
+      // what an employer types into a single search box.
+      where.OR = [
+        { user: { name: { contains: search, mode: "insensitive" } } },
+        { headline: { contains: search, mode: "insensitive" } },
+        { interestedRole: { contains: search, mode: "insensitive" } },
+      ];
     }
-    if (location) where.location = { contains: location, mode: "insensitive" };
+    if (location) where.currentCity = { contains: location, mode: "insensitive" };
+    if (state) where.currentState = state;
     if (experience) where.experience = { gte: parseInt(experience) };
 
     let skillFilter: Record<string, unknown> | undefined;
     if (skills) {
-      const skillList = skills.split(",").map((s) => s.trim());
-      skillFilter = {
-        skills: {
-          some: {
-            skill: { name: { in: skillList } },
+      const skillList = skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (skillList.length) {
+        skillFilter = {
+          skills: {
+            some: {
+              skill: { name: { in: skillList } },
+            },
           },
-        },
-      };
+        };
+      }
     }
 
     const [candidates, total] = await Promise.all([
@@ -59,9 +72,10 @@ export async function GET(req: NextRequest) {
         where: { ...where, ...skillFilter },
         skip: (page - 1) * limit,
         take: limit,
+        orderBy: { updatedAt: "desc" },
         include: {
           user: { select: { id: true, name: true, email: true, profileImage: true } },
-          skills: { include: { skill: true } },
+          skills: { include: { skill: { select: { name: true } } } },
           resumes: { where: { isPrimary: true }, select: { id: true, title: true, fileUrl: true } },
           verification: { select: { status: true } },
         },

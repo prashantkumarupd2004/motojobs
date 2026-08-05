@@ -213,6 +213,7 @@ model Candidate {
   education      Education[]
   workExperience WorkExperience[]
   profileViews   ProfileView[]
+  savedBy        SavedCandidate[]
 
   @@map("candidates")
 }
@@ -295,22 +296,44 @@ model Company {
   linkedinUrl       String?
   /// 15-character Indian GSTIN, uppercase.
   gstNumber         String?
+  /// Company PAN (ABCDE1234F), uppercase. Optional at onboarding.
+  panNumber         String?
   addressLine       String?
   city              String?
   state             String?
   pincode           String?
+  /// Optional Google Maps link to the premises, shown on the public page.
+  mapsUrl           String?
   phone             String?
   /// Public recruitment inbox — distinct from the recruiter's login email.
   email             String?
   isProfileComplete Boolean  @default(false)
   isVerified        Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
 
-  recruiters    Recruiter[]
-  jobs          Job[]
-  documents     CompanyDocument[]
-  subscriptions Subscription[]
+  /// JSON string array of HIRING_CATEGORIES the employer recruits for.
+  hiringCategories String?
+  /// Daily | Weekly | Monthly | Occasionally
+  hiringFrequency  String?
+  hrName           String?
+  hrPhone          String?
+  /// Furthest onboarding step reached, so a dropped session can resume.
+  onboardingStep     Int @default(0)
+  /// Mirrors EMPLOYER_STEP_COMPLETION so the dashboard and wizard agree.
+  profileCompletion  Int @default(0)
+
+  facebookUrl  String?
+  instagramUrl String?
+  youtubeUrl   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recruiters      Recruiter[]
+  jobs            Job[]
+  documents       CompanyDocument[]
+  subscriptions   Subscription[]
+  savedCandidates SavedCandidate[]
+  interviews      Interview[]
 
   @@map("companies")
 }
@@ -345,13 +368,22 @@ model Job {
   skills           String    @default("[]")
   category         String? // automotive category id, see src/lib/automotive.ts
   jobType          String // Full-time, Part-time, Contract, Apprenticeship, Internship
-  workMode         String // On-site, Field, Hybrid
+  workMode         String // Onsite, Hybrid, Remote
   location         String?
+  /// State and city are stored separately so the employer picks them from the
+  /// same lists candidates do; `location` stays the joined display string.
+  state            String?
+  city             String?
   minSalary        Float?
   maxSalary        Float?
   currency         String    @default("INR")
   experience       String?
   education        String?
+  /// JSON string array of BENEFITS offered with the role.
+  benefits         String    @default("[]")
+  /// Immediate | Within 15 days | Within 30 days | Within 60 days | Flexible
+  joiningTimeline  String?
+  /// DRAFT | PENDING | APPROVED | REJECTED | CLOSED
   status           String    @default("PENDING")
   openings         Int       @default(1)
   deadline         DateTime?
@@ -363,8 +395,59 @@ model Job {
   company      Company?      @relation(fields: [companyId], references: [id])
   applications Application[]
   savedJobs    SavedJob[]
+  interviews   Interview[]
 
+  @@index([recruiterId, status])
   @@map("jobs")
+}
+
+/// A candidate an employer bookmarked from search, so they can come back to a
+/// profile without an application existing yet. Scoped to the company rather
+/// than the recruiter so a colleague sees the same shortlist.
+model SavedCandidate {
+  id          String   @id @default(cuid())
+  companyId   String
+  candidateId String
+  /// Free-text note the recruiter attached when saving.
+  notes       String?
+  savedAt     DateTime @default(now())
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, candidateId])
+  @@index([companyId, savedAt])
+  @@map("saved_candidates")
+}
+
+/// A scheduled interview. Anchored to an application so an employer cannot
+/// invite a candidate who never applied, matching the Conversation rule.
+model Interview {
+  id            String   @id @default(cuid())
+  applicationId String
+  companyId     String
+  jobId         String
+  scheduledAt   DateTime
+  durationMins  Int      @default(30)
+  /// IN_PERSON | PHONE | VIDEO
+  mode          String   @default("IN_PERSON")
+  /// Address for IN_PERSON, meeting link for VIDEO, number for PHONE.
+  venue         String?
+  notes         String?
+  /// SCHEDULED | COMPLETED | CANCELLED
+  status        String   @default("SCHEDULED")
+  outcome       String?
+  cancelledAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  job         Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, status, scheduledAt])
+  @@index([applicationId])
+  @@map("interviews")
 }
 
 model Application {
@@ -385,6 +468,7 @@ model Application {
   candidate    Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   resume       Resume?       @relation(fields: [resumeId], references: [id])
   conversation Conversation?
+  interviews   Interview[]
 
   @@unique([jobId, candidateId])
   @@map("applications")
@@ -538,7 +622,7 @@ model Notification {
   id        String    @id @default(cuid())
   userId    String
   /// APPLICATION_STATUS | NEW_APPLICANT | JOB_APPROVED | JOB_REJECTED |
-  /// DOCUMENT_REVIEWED | SUBSCRIPTION | MESSAGE | SYSTEM
+  /// DOCUMENT_REVIEWED | SUBSCRIPTION | MESSAGE | INTERVIEW | SYSTEM
   type      String
   title     String
   body      String?

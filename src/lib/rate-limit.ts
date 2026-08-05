@@ -84,6 +84,11 @@ export const LIMITS = {
   onboardingDraft: { limit: 120, windowMs: 60 * 60_000 },
   companyProfile: { limit: 30, windowMs: 60 * 60_000 },
   companyDocument: { limit: 20, windowMs: 60 * 60_000 },
+  employerOnboarding: { limit: 20, windowMs: 60 * 60_000 },
+  /// Per-step wizard autosave — fires far more often than a final submit.
+  employerOnboardingDraft: { limit: 120, windowMs: 60 * 60_000 },
+  interview: { limit: 60, windowMs: 60 * 60_000 },
+  savedCandidate: { limit: 90, windowMs: 60 * 60_000 },
   contact: { limit: 5, windowMs: 60 * 60_000 },
 } as const;
 

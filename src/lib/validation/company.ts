@@ -85,7 +85,7 @@ export const companyProfileSchema = z.object({
   logo: z
     .string()
     .trim()
-    .regex(/^\/uploads\/[\w.-]+$/, "Upload your logo again")
+    .regex(/^\/api\/files\/images\/[\w-]+\/[\w.-]+$/, "Upload your logo again")
     .optional(),
   designation: optionalText(120),
   hrName: z.string().trim().min(2, "Enter the HR contact name").max(120).optional(),
@@ -107,7 +107,7 @@ export const companyDocumentSchema = z.object({
   fileUrl: z
     .string()
     .trim()
-    .regex(/^\/uploads\/[\w.-]+$/, "Upload the document again"),
+    .regex(/^\/api\/files\/(resumes|images)\/[\w-]+\/[\w.-]+$/, "Upload the document again"),
   fileName: z.string().trim().max(160).optional(),
 });
 

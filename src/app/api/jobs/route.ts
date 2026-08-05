@@ -85,8 +85,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       title, description, requirements, responsibilities, skills,
-      jobType, workMode, location, minSalary, maxSalary, currency,
+      jobType, workMode, location, state, city, minSalary, maxSalary, currency,
       experience, education, openings, deadline, category,
+      benefits, joiningTimeline, status,
     } = body;
 
     const recruiter = await prisma.recruiter.findUnique({
@@ -97,18 +98,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Recruiter profile not found" }, { status: 404 });
     }
 
-    const entitlements = await getEntitlements(recruiter.companyId);
-    if (!entitlements.canPostJob) {
-      return NextResponse.json(
-        {
-          error: recruiter.companyId
-            ? `Your ${entitlements.planName} plan allows ${entitlements.jobPostLimit} active job post${entitlements.jobPostLimit === 1 ? "" : "s"}. Close a role or upgrade to post another.`
-            : "Add your company profile before posting a job.",
-          code: "QUOTA_EXCEEDED",
-          entitlements,
-        },
-        { status: 403 }
-      );
+    // A draft is never published, so it occupies no slot and skips the quota
+    // check entirely — an employer can always park work in progress.
+    const isDraft = status === "DRAFT";
+
+    if (!isDraft) {
+      const entitlements = await getEntitlements(recruiter.companyId);
+      if (!entitlements.canPostJob) {
+        return NextResponse.json(
+          {
+            error: recruiter.companyId
+              ? `Your ${entitlements.planName} plan allows ${entitlements.jobPostLimit} active job post${entitlements.jobPostLimit === 1 ? "" : "s"}. Close a role or upgrade to post another.`
+              : "Add your company profile before posting a job.",
+            code: "QUOTA_EXCEEDED",
+            entitlements,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const job = await prisma.job.create({
@@ -120,10 +127,14 @@ export async function POST(req: NextRequest) {
         requirements,
         responsibilities,
         skills: JSON.stringify(skills ?? []),
+        benefits: JSON.stringify(benefits ?? []),
+        joiningTimeline,
         category,
         jobType,
         workMode,
-        location,
+        location: location || [city, state].filter(Boolean).join(", ") || null,
+        state,
+        city,
         minSalary: minSalary ? parseFloat(minSalary) : undefined,
         maxSalary: maxSalary ? parseFloat(maxSalary) : undefined,
         currency: currency || "INR",
@@ -131,14 +142,14 @@ export async function POST(req: NextRequest) {
         education,
         openings: openings || 1,
         deadline: deadline ? new Date(deadline) : undefined,
-        status: "PENDING",
+        status: isDraft ? "DRAFT" : "PENDING",
       },
       include: { company: true },
     });
 
     // Reporting counter for the billing period. The quota itself is enforced
     // from the live job count above, so this drifting is not a correctness bug.
-    if (recruiter.companyId) {
+    if (recruiter.companyId && !isDraft) {
       await prisma.subscription.updateMany({
         where: { companyId: recruiter.companyId, status: "ACTIVE" },
         data: { jobPostsUsed: { increment: 1 } },

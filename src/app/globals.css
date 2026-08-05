@@ -65,6 +65,8 @@
   --color-caution-soft:   #FFFBEB;
   --color-critical:       #EF4444;
   --color-critical-soft:  #FEF2F2;
+  --color-informative:      #0F4C81;
+  --color-informative-soft: #F0F6FB;
 
   /* --- Radius --- */
   --radius-sm:   8px;
@@ -192,6 +194,64 @@
     border: 1px solid var(--color-line);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-md);
+  }
+
+  /* Detached surface — dialogs, success panels, anything floating over content. */
+  .surface-float {
+    background: #FFFFFF;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* ============================================================
+     SURFACE HIGHLIGHTS
+     ============================================================ */
+
+  /* Hairline of light along the top edge, so a white card still reads as
+     raised against a white page. Applied to cards, not to text. */
+  .sheen {
+    position: relative;
+  }
+  .sheen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 1px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  /* Diagonal gloss that crosses a filled button on hover. */
+  .sweep {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .sweep::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-120%);
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.22) 50%,
+      transparent 80%
+    );
+    pointer-events: none;
+  }
+  .sweep:hover::after {
+    transform: translateX(120%);
+    transition: transform 0.75s var(--ease-premium);
   }
 
   /* ============================================================

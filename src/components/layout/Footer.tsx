@@ -43,7 +43,7 @@ const EMPLOYER_LINKS: [string, string][] = [
   ['Post a Job', '/recruiter/post-job'],
   ['Search Candidates', '/recruiter/candidate-search'],
   ['Pricing Plans', '/pricing'],
-  ['Bulk Hiring', '/recruiter/bulk-hiring'],
+  ['Manage Jobs', '/recruiter/manage-jobs'],
   ['Recruiter Login', '/login?role=recruiter'],
 ];
 

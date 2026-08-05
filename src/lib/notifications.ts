@@ -16,6 +16,7 @@ export type NotificationType =
   | "DOCUMENT_REVIEWED"
   | "SUBSCRIPTION"
   | "MESSAGE"
+  | "INTERVIEW"
   | "SYSTEM";
 
 export async function notify(input: {
