@@ -73,6 +73,11 @@ model User {
   isEmailVerified Boolean   @default(false)
   emailVerifiedAt DateTime?
   profileImage    String?
+  /// Set when an admin suspends the account; `isActive` stays the fast check.
+  suspendedAt     DateTime?
+  suspendedReason String?
+  /// Last successful sign-in, for the admin's login-activity view.
+  lastLoginAt     DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -85,7 +90,9 @@ model User {
   messages           Message[]
   blogPosts          BlogPost[]
   activityLogs       ActivityLog[]
+  loginHistory       LoginHistory[]
 
+  @@index([role, createdAt])
   @@map("users")
 }
 
@@ -555,6 +562,7 @@ model SupportTicket {
   description String
   status      String    @default("OPEN")
   priority    String    @default("MEDIUM")
+  /// CONTACT | FEEDBACK | BUG | OTHER — drives the admin support tabs.
   category    String?
   adminNotes  String?
   resolvedAt  DateTime?
@@ -563,6 +571,8 @@ model SupportTicket {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([status, createdAt])
+  @@index([category, createdAt])
   @@map("support_tickets")
 }
 
@@ -730,8 +740,15 @@ model BlogPost {
   /// Markdown-ish body: `## ` lines are headings, blank-line separated.
   body        String
   category    String?
+  /// JSON string array.
+  tags        String    @default("[]")
   coverImage  String?
   authorId    String?
+  /// Byline shown to readers, which need not be a user account.
+  authorName  String?
+  /// Falls back to `title` / `excerpt` when unset.
+  seoTitle       String?
+  seoDescription String?
   /// DRAFT | PUBLISHED
   status      String    @default("DRAFT")
   readMinutes Int       @default(5)
@@ -811,3 +828,201 @@ model RolePermission {
   @@id([roleId, permissionId])
   @@map("role_permissions")
 }
+
+// ------------------------------------------------------------------
+// Admin-managed taxonomy
+//
+// The vocabulary in src/lib/automotive.ts is compiled into the bundle and
+// imported by prisma/seed.ts, so it cannot be edited at runtime. These tables
+// let the admin add a category or city without a deploy. The constants remain
+// the seed source and the fallback, so a wiped table degrades to the built-in
+// list rather than an empty dropdown.
+// ------------------------------------------------------------------
+
+/// One table for every flat list the admin curates, discriminated by `kind`.
+/// Four near-identical tables would need four sets of routes and screens.
+model Taxonomy {
+  id String @id @default(cuid())
+  /// JOB_CATEGORY | INDUSTRY | EXPERIENCE_LEVEL | EMPLOYMENT_TYPE |
+  /// SKILL | QUALIFICATION
+  kind      String
+  /// Stable machine value persisted on jobs and profiles. Renaming `label` is
+  /// safe; changing `value` orphans existing rows, so the UI keeps it fixed.
+  value     String
+  label     String
+  /// Groups skills (Technical, EV, Sales…) and orders category cards.
+  group     String?
+  blurb     String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([kind, value])
+  @@index([kind, isActive, sortOrder])
+  @@map("taxonomies")
+}
+
+model State {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cities City[]
+
+  @@map("states")
+}
+
+model City {
+  id        String   @id @default(cuid())
+  stateId   String
+  name      String
+  /// Marks the automotive hubs the homepage promotes.
+  isHub     Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  state State @relation(fields: [stateId], references: [id], onDelete: Cascade)
+
+  @@unique([stateId, name])
+  @@index([stateId, isActive])
+  @@map("cities")
+}
+
+// ------------------------------------------------------------------
+// CMS, settings and operational logs
+// ------------------------------------------------------------------
+
+/// Editable copy for the marketing pages. `blocks` holds the page-specific
+/// shape (hero fields, FAQ entries, footer columns) as JSON, so a new section
+/// does not need a migration.
+model CmsPage {
+  id String @id @default(cuid())
+  /// HOME | ABOUT | CONTACT | PRIVACY | TERMS | FAQ | FOOTER
+  key             String    @unique
+  title           String
+  /// JSON object. Shape depends on `key` — see src/lib/cms.ts.
+  blocks          String    @default("{}")
+  seoTitle        String?
+  seoDescription  String?
+  isPublished     Boolean   @default(true)
+  updatedById     String?
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("cms_pages")
+}
+
+/// Flat key/value store for website settings. Kept as strings so the admin can
+/// add a setting without a migration; `group` drives the settings page tabs.
+model SiteSetting {
+  id String @id @default(cuid())
+  key         String   @unique
+  value       String   @default("")
+  /// BRANDING | CONTACT | SOCIAL | SEO | ANALYTICS | EMAIL
+  group       String   @default("BRANDING")
+  label       String
+  /// TEXT | TEXTAREA | URL | EMAIL | IMAGE | BOOLEAN
+  inputType   String   @default("TEXT")
+  hint        String?
+  /// True for credentials (SMTP password, API keys): the value is never sent to
+  /// the browser, only whether it is set.
+  isSecret    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@index([group, sortOrder])
+  @@map("site_settings")
+}
+
+/// Transactional email copy. `src/lib/email.ts` keeps its hard-coded defaults;
+/// a row here overrides them, so a broken edit cannot stop signup mail.
+model EmailTemplate {
+  id String @id @default(cuid())
+  /// WELCOME | OTP | INTERVIEW | PASSWORD_RESET | CONTACT
+  key       String   @unique
+  name      String
+  subject   String
+  /// Body with {{placeholder}} tokens, listed in `variables`.
+  bodyHtml  String
+  bodyText  String
+  /// JSON array of the tokens this template accepts.
+  variables String   @default("[]")
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@map("email_templates")
+}
+
+/// A broadcast the admin sends to a segment. Rows in `notifications` are
+/// created per recipient when this is sent, so delivery is auditable.
+model Announcement {
+  id String @id @default(cuid())
+  title    String
+  body     String
+  /// ALL | CANDIDATES | EMPLOYERS
+  audience String    @default("ALL")
+  /// IN_APP | EMAIL | BOTH
+  channel  String    @default("IN_APP")
+  link     String?
+  /// DRAFT | SENT
+  status   String    @default("DRAFT")
+  /// How many recipients it reached, so a resend is obvious.
+  sentCount Int      @default(0)
+  sentAt    DateTime?
+  createdById String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@map("announcements")
+}
+
+/// Sign-in attempts, successful and failed. Failures are recorded without a
+/// userId when the address does not exist, which is what makes credential
+/// stuffing visible.
+model LoginHistory {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String
+  success   Boolean
+  /// BAD_PASSWORD | UNVERIFIED | SUSPENDED | NO_ACCOUNT
+  failReason String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([email, createdAt])
+  @@index([success, createdAt])
+  @@map("login_history")
+}
+
+/// Unhandled server errors surfaced to the admin, so a production fault is
+/// visible without shell access to the container logs.
+model ErrorLog {
+  id        String   @id @default(cuid())
+  message   String
+  stack     String?
+  /// Route or job that raised it.
+  source    String?
+  method    String?
+  path      String?
+  userId    String?
+  /// Cleared once an admin has triaged it.
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([resolvedAt, createdAt])
+  @@map("error_logs")
+}
+

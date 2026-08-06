@@ -9,7 +9,35 @@ import { limitBy, LIMITS, reset, clientIp } from "@/lib/rate-limit";
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
+  /// Extends the session cookie from one day to thirty.
+  remember: z.boolean().optional(),
 });
+
+/**
+ * Records the attempt for the admin's login-history view. Failures are logged
+ * with a null userId when the address does not exist, which is what makes
+ * credential stuffing visible. Swallows its own errors: a logging failure must
+ * never block a legitimate sign-in.
+ */
+async function recordLogin(
+  req: NextRequest,
+  input: { userId?: string; email: string; success: boolean; failReason?: string }
+) {
+  try {
+    await prisma.loginHistory.create({
+      data: {
+        userId: input.userId ?? null,
+        email: input.email,
+        success: input.success,
+        failReason: input.failReason ?? null,
+        ipAddress: clientIp(req),
+        userAgent: req.headers.get("user-agent")?.slice(0, 300) ?? null,
+      },
+    });
+  } catch (error) {
+    console.error("recordLogin failed:", error);
+  }
+}
 
 export async function POST(req: NextRequest) {
   const limit = limitBy(req, "login", LIMITS.login);
@@ -29,10 +57,31 @@ export async function POST(req: NextRequest) {
     const invalid = () =>
       NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
 
-    if (!user?.password) return invalid();
-    if (!(await comparePassword(data.password, user.password))) return invalid();
+    if (!user?.password) {
+      await recordLogin(req, {
+        email: data.email,
+        success: false,
+        failReason: "NO_ACCOUNT",
+      });
+      return invalid();
+    }
+    if (!(await comparePassword(data.password, user.password))) {
+      await recordLogin(req, {
+        userId: user.id,
+        email: data.email,
+        success: false,
+        failReason: "BAD_PASSWORD",
+      });
+      return invalid();
+    }
 
     if (!user.isActive) {
+      await recordLogin(req, {
+        userId: user.id,
+        email: data.email,
+        success: false,
+        failReason: "SUSPENDED",
+      });
       return NextResponse.json(
         { error: "Account is deactivated. Please contact support." },
         { status: 403 }
@@ -42,6 +91,12 @@ export async function POST(req: NextRequest) {
     // Credentials are correct but the address was never confirmed — send a fresh
     // code and route the client to the verification step rather than signing in.
     if (!user.isEmailVerified) {
+      await recordLogin(req, {
+        userId: user.id,
+        email: data.email,
+        success: false,
+        failReason: "UNVERIFIED",
+      });
       const echo = await issueEmailOtp(user, "SIGNUP");
       return NextResponse.json(
         {
@@ -56,11 +111,14 @@ export async function POST(req: NextRequest) {
 
     reset(`login:${clientIp(req)}`);
 
-    const token = await signJWT({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    const token = await signJWT(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      data.remember
+    );
 
     const response = NextResponse.json({
       message: "Login successful",
@@ -73,8 +131,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    setSessionCookie(response, token);
+    setSessionCookie(response, token, data.remember);
     setCsrfCookie(response, generateCsrfToken());
+
+    await Promise.all([
+      recordLogin(req, { userId: user.id, email: user.email, success: true }),
+      prisma.user
+        .update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+        .catch(() => {}),
+    ]);
+
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {

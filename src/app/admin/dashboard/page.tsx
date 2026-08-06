@@ -1,131 +1,341 @@
 'use client';
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Users, Briefcase, Building2, CreditCard, TrendingUp, AlertCircle, CheckCircle, Clock, ArrowRight } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
-const CHART_DATA = [
-  { month: 'Jan', users: 120, jobs: 45, applications: 320 },
-  { month: 'Feb', users: 180, jobs: 62, applications: 480 },
-  { month: 'Mar', users: 240, jobs: 78, applications: 620 },
-  { month: 'Apr', users: 310, jobs: 95, applications: 750 },
-  { month: 'May', users: 420, jobs: 110, applications: 920 },
-  { month: 'Jun', users: 580, jobs: 145, applications: 1150 },
-];
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import {
+  AlertCircle,
+  ArrowRight,
+  Bell,
+  Briefcase,
+  Building2,
+  CalendarCheck,
+  FileText,
+  Loader2,
+  UserCog,
+  UserPlus,
+  Users,
+} from 'lucide-react';
+import { PageHeader, Panel, StatCard, StatusPill, type PillTone } from '@/components/admin/ui';
+
+interface Stats {
+  totalJobSeekers: number;
+  totalEmployers: number;
+  activeJobs: number;
+  totalApplications: number;
+  totalInterviews: number;
+  totalCompanies: number;
+  todayRegistrations: number;
+  todayJobs: number;
+}
+
+interface Overview {
+  pendingJobs: number;
+  openTickets: number;
+  suspendedUsers: number;
+  unverifiedUsers: number;
+}
+
+interface Payload {
+  stats: Stats;
+  overview: Overview;
+  latestEmployers: Array<{
+    id: string;
+    createdAt: string;
+    user: { name: string; email: string };
+    company: { id: string; name: string; logo: string | null; city: string | null } | null;
+  }>;
+  latestCandidates: Array<{
+    id: string;
+    headline: string | null;
+    currentCity: string | null;
+    createdAt: string;
+    user: { name: string; email: string; profileImage: string | null };
+  }>;
+  latestJobs: Array<{
+    id: string;
+    title: string;
+    status: string;
+    location: string | null;
+    createdAt: string;
+    company: { name: string } | null;
+    _count: { applications: number };
+  }>;
+  recentApplications: Array<{
+    id: string;
+    status: string;
+    appliedAt: string;
+    candidate: { user: { name: string } };
+    job: { id: string; title: string };
+  }>;
+  recentNotifications: Array<{
+    id: string;
+    type: string;
+    title: string;
+    body: string | null;
+    createdAt: string;
+  }>;
+}
+
+const JOB_STATUS_TONE: Record<string, PillTone> = {
+  APPROVED: 'positive',
+  PENDING: 'caution',
+  DRAFT: 'neutral',
+  CLOSED: 'neutral',
+  REJECTED: 'critical',
+};
+
+const APP_STATUS_TONE: Record<string, PillTone> = {
+  APPLIED: 'brand',
+  SCREENING: 'caution',
+  SHORTLISTED: 'brand',
+  INTERVIEW: 'brand',
+  OFFERED: 'positive',
+  HIRED: 'positive',
+  REJECTED: 'critical',
+};
+
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({ users: 0, jobs: 0, applications: 0, revenue: 0 });
-  const [pending, setPending] = useState({ candidates: 0, recruiters: 0, jobs: 0, tickets: 0 });
+  const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchStats();
+    let cancelled = false;
+    fetch('/api/admin/dashboard')
+      .then(async (res) => {
+        const body = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setError(body.error ?? 'Could not load the dashboard');
+          return;
+        }
+        setData(body);
+      })
+      .catch(() => !cancelled && setError('Could not load the dashboard'))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  async function fetchStats() {
-    try {
-      const res = await fetch('/api/admin/analytics');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.data) {
-          setStats(data.data.stats || stats);
-          setPending(data.data.pending || pending);
-        }
-      }
-    } catch {} finally {
-      setLoading(false);
-    }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-7 h-7 text-brand-600 animate-spin" />
+      </div>
+    );
   }
 
-  const STAT_CARDS = [
-    { label: 'Total Users', value: stats.users || '5,234', icon: Users, color: 'text-brand-600', bg: 'bg-brand-50 border-brand-100', trend: '+12%' },
-    { label: 'Active Jobs', value: stats.jobs || '1,847', icon: Briefcase, color: 'text-[#0A7A54]', bg: 'bg-positive-soft border-[#BEE7D8]', trend: '+8%' },
-    { label: 'Applications', value: stats.applications || '23,891', icon: Building2, color: 'text-ignite-600', bg: 'bg-ignite-50 border-ignite-100', trend: '+24%' },
-    { label: 'Revenue', value: `₹${(stats.revenue / 100000 || 12.4).toFixed(1)}L`, icon: CreditCard, color: 'text-[#9A5D00]', bg: 'bg-caution-soft border-[#F3DBB4]', trend: '+18%' },
+  if (error || !data) {
+    return (
+      <div className="bg-critical-soft border border-critical/20 text-critical rounded-[14px] px-4 py-3 text-[13.5px] font-medium">
+        {error || 'Could not load the dashboard'}
+      </div>
+    );
+  }
+
+  const { stats, overview } = data;
+
+  const CARDS = [
+    { label: 'Total Job Seekers', value: stats.totalJobSeekers, icon: Users, href: '/admin/job-seekers', tone: 'brand' as const },
+    { label: 'Total Employers', value: stats.totalEmployers, icon: UserCog, href: '/admin/employers', tone: 'brand' as const },
+    { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, href: '/admin/jobs', tone: 'positive' as const },
+    { label: 'Applications', value: stats.totalApplications, icon: FileText, href: '/admin/applications', tone: 'brand' as const },
+    { label: 'Interviews', value: stats.totalInterviews, icon: CalendarCheck, href: '/admin/interviews', tone: 'brand' as const },
+    { label: 'Companies', value: stats.totalCompanies, icon: Building2, href: '/admin/companies', tone: 'neutral' as const },
+    { label: "Today's Registrations", value: stats.todayRegistrations, icon: UserPlus, tone: 'positive' as const },
+    { label: "Today's Jobs Posted", value: stats.todayJobs, icon: Briefcase, tone: 'caution' as const },
   ];
 
-  const PENDING_ITEMS = [
-    { label: 'Candidate Verifications', value: pending.candidates || 23, href: '/admin/candidate-verification', color: 'text-brand-600', urgent: pending.candidates > 10 },
-    { label: 'Recruiter Verifications', value: pending.recruiters || 8, href: '/admin/recruiter-verification', color: 'text-[#0A7A54]', urgent: false },
-    { label: 'Job Approvals', value: pending.jobs || 15, href: '/admin/job-approval', color: 'text-[#9A5D00]', urgent: pending.jobs > 10 },
-    { label: 'Support Tickets', value: pending.tickets || 31, href: '/admin/support-tickets', color: 'text-[#B32B2B]', urgent: pending.tickets > 20 },
+  const QUEUES = [
+    { label: 'Jobs awaiting review', value: overview.pendingJobs, href: '/admin/jobs?status=PENDING' },
+    { label: 'Open support tickets', value: overview.openTickets, href: '/admin/support' },
+    { label: 'Suspended accounts', value: overview.suspendedUsers, href: '/admin/job-seekers?status=suspended' },
+    { label: 'Unverified emails', value: overview.unverifiedUsers, href: '/admin/job-seekers?verified=no' },
   ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-ink">Admin Dashboard</h1>
-        <p className="text-ink-muted mt-1">Platform overview and management</p>
-      </div>
+      <PageHeader title="Dashboard" subtitle="Platform overview" />
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STAT_CARDS.map(({ label, value, icon: Icon, color, bg, trend }) => (
-          <div key={label} className="bg-white border border-line rounded-[16px] p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div className={`w-10 h-10 ${bg} border rounded-lg flex items-center justify-center`}>
-                <Icon className={`w-5 h-5 ${color}`} />
-              </div>
-              <span className="text-xs text-[#0A7A54] bg-positive-soft border border-[#BEE7D8] rounded-full px-2 py-0.5">{trend}</span>
-            </div>
-            <div className="text-2xl font-bold text-ink">{value}</div>
-            <div className="text-xs text-ink-muted mt-1">{label}</div>
-          </div>
+        {CARDS.map((c) => (
+          <StatCard key={c.label} {...c} />
         ))}
       </div>
 
-      {/* Pending Actions */}
-      <div className="bg-white border border-line rounded-[16px] p-5">
-        <h2 className="font-bold text-ink mb-4">Pending Actions</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {PENDING_ITEMS.map(({ label, value, href, color, urgent }) => (
-            <Link key={label} href={href} className={`p-4 rounded-[16px] border transition-all hover:scale-105 ${urgent ? 'bg-critical-soft border-[#F3C9C9]' : 'bg-canvas border-line hover:border-line'}`}>
-              <div className="flex items-center justify-between mb-2">
-                {urgent ? <AlertCircle className="w-4 h-4 text-[#B32B2B]" /> : <Clock className="w-4 h-4 text-ink-muted" />}
-                <ArrowRight className="w-3.5 h-3.5 text-ink-faint" />
-              </div>
-              <div className={`text-2xl font-bold ${urgent ? 'text-[#B32B2B]' : color}`}>{value}</div>
-              <div className="text-xs text-ink-muted mt-1">{label}</div>
-            </Link>
-          ))}
+      <Panel title="Website overview">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-4">
+          {QUEUES.map(({ label, value, href }) => {
+            const needsAction = value > 0;
+            return (
+              <Link
+                key={label}
+                href={href}
+                className={`rounded-[12px] border p-4 transition-colors ${
+                  needsAction
+                    ? 'bg-caution-soft border-[#F3DBB4] hover:border-[#E0BE86]'
+                    : 'bg-canvas border-line hover:border-brand-200'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  {needsAction ? (
+                    <AlertCircle className="w-4 h-4 text-[#9A5D00]" />
+                  ) : (
+                    <span className="w-4 h-4" />
+                  )}
+                  <ArrowRight className="w-3.5 h-3.5 text-ink-faint" />
+                </div>
+                <div
+                  className={`text-[22px] font-extrabold tracking-[-0.03em] ${
+                    needsAction ? 'text-[#9A5D00]' : 'text-ink'
+                  }`}
+                >
+                  {value}
+                </div>
+                <div className="text-[12px] text-ink-muted mt-1">{label}</div>
+              </Link>
+            );
+          })}
         </div>
+      </Panel>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <Panel
+          title="Latest employers"
+          action={<SeeAll href="/admin/employers" />}
+        >
+          <List
+            items={data.latestEmployers}
+            empty="No employers registered yet."
+            render={(e) => (
+              <Row
+                key={e.id}
+                title={e.company?.name ?? e.user.name}
+                subtitle={`${e.user.name} · ${e.company?.city ?? 'Location not set'}`}
+                meta={shortDate(e.createdAt)}
+              />
+            )}
+          />
+        </Panel>
+
+        <Panel title="Latest candidates" action={<SeeAll href="/admin/job-seekers" />}>
+          <List
+            items={data.latestCandidates}
+            empty="No candidates registered yet."
+            render={(c) => (
+              <Row
+                key={c.id}
+                title={c.user.name}
+                subtitle={c.headline || c.currentCity || c.user.email}
+                meta={shortDate(c.createdAt)}
+              />
+            )}
+          />
+        </Panel>
+
+        <Panel title="Latest jobs" action={<SeeAll href="/admin/jobs" />}>
+          <List
+            items={data.latestJobs}
+            empty="No jobs posted yet."
+            render={(j) => (
+              <Row
+                key={j.id}
+                title={j.title}
+                subtitle={`${j.company?.name ?? 'No company'} · ${j._count.applications} applicant${j._count.applications === 1 ? '' : 's'}`}
+                meta={<StatusPill label={j.status} tone={JOB_STATUS_TONE[j.status] ?? 'neutral'} />}
+              />
+            )}
+          />
+        </Panel>
+
+        <Panel title="Recent applications" action={<SeeAll href="/admin/applications" />}>
+          <List
+            items={data.recentApplications}
+            empty="No applications yet."
+            render={(a) => (
+              <Row
+                key={a.id}
+                title={a.candidate.user.name}
+                subtitle={a.job.title}
+                meta={<StatusPill label={a.status} tone={APP_STATUS_TONE[a.status] ?? 'neutral'} />}
+              />
+            )}
+          />
+        </Panel>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white border border-line rounded-[16px] p-5">
-          <h2 className="font-bold text-ink mb-4">User Growth</h2>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={CHART_DATA}>
-              <defs>
-                <linearGradient id="userGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0F4C81" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#0F4C81" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8EAF0" />
-              <XAxis dataKey="month" tick={{ fill: '#9AA1AE', fontSize: 12 }} />
-              <YAxis tick={{ fill: '#9AA1AE', fontSize: 12 }} />
-              <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E8EAF0', borderRadius: '14px', color: '#1A1A1A', boxShadow: '0 8px 24px rgba(16,24,40,0.08)', fontSize: 13 }} />
-              <Area type="monotone" dataKey="users" stroke="#0F4C81" fill="url(#userGrad)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white border border-line rounded-[16px] p-5">
-          <h2 className="font-bold text-ink mb-4">Jobs & Applications</h2>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={CHART_DATA}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8EAF0" />
-              <XAxis dataKey="month" tick={{ fill: '#9AA1AE', fontSize: 12 }} />
-              <YAxis tick={{ fill: '#9AA1AE', fontSize: 12 }} />
-              <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E8EAF0', borderRadius: '14px', color: '#1A1A1A', boxShadow: '0 8px 24px rgba(16,24,40,0.08)', fontSize: 13 }} />
-              <Bar dataKey="jobs" fill="#0E9F6E" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="applications" fill="#0F4C81" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      <Panel title="Recent notifications" action={<SeeAll href="/admin/notifications" />}>
+        <List
+          items={data.recentNotifications}
+          empty="No notifications yet."
+          render={(n) => (
+            <Row
+              key={n.id}
+              icon={<Bell className="w-4 h-4 text-ink-faint shrink-0" />}
+              title={n.title}
+              subtitle={n.body ?? n.type}
+              meta={shortDate(n.createdAt)}
+            />
+          )}
+        />
+      </Panel>
     </div>
+  );
+}
+
+function SeeAll({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      className="group text-[12.5px] font-semibold text-brand-600 hover:text-brand-700 inline-flex items-center gap-1.5 transition-colors"
+    >
+      View all <ArrowRight className="w-3.5 h-3.5 arrow-slide" />
+    </Link>
+  );
+}
+
+function List<T>({
+  items,
+  empty,
+  render,
+}: {
+  items: T[];
+  empty: string;
+  render: (item: T) => React.ReactNode;
+}) {
+  if (items.length === 0) {
+    return <p className="text-[13.5px] text-ink-muted px-5 py-10 text-center">{empty}</p>;
+  }
+  return <ul className="divide-y divide-line-soft">{items.map(render)}</ul>;
+}
+
+function Row({
+  icon,
+  title,
+  subtitle,
+  meta,
+}: {
+  icon?: React.ReactNode;
+  title: string;
+  subtitle?: string | null;
+  meta?: React.ReactNode;
+}) {
+  return (
+    <li className="flex items-center justify-between gap-3 px-5 py-3">
+      <div className="flex items-center gap-2.5 min-w-0">
+        {icon}
+        <div className="min-w-0">
+          <p className="text-[13.5px] font-semibold text-ink truncate">{title}</p>
+          {subtitle && (
+            <p className="text-[12px] text-ink-muted truncate mt-0.5">{subtitle}</p>
+          )}
+        </div>
+      </div>
+      <div className="shrink-0 text-[12px] text-ink-faint">{meta}</div>
+    </li>
   );
 }

@@ -13,6 +13,9 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    // prisma/seed.ts runs under `node --experimental-strip-types`, which
+    // resolves the literal path and so requires the .ts extension on imports.
+    "allowImportingTsExtensions": true,
     "plugins": [
       {
         "name": "next"

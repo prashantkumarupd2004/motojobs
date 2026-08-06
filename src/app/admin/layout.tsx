@@ -1,178 +1,233 @@
 'use client';
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, Users, UserCheck, UserCog, Briefcase, CreditCard,
-  BarChart2, MessageSquare, LogOut, ChevronLeft, ChevronRight, Menu, Shield, ShieldCheck
+  BarChart3,
+  Bell,
+  Blocks,
+  Briefcase,
+  Building2,
+  CalendarCheck,
+  FileText,
+  Gauge,
+  GraduationCap,
+  LayoutDashboard,
+  LifeBuoy,
+  LogOut,
+  Mail,
+  MapPin,
+  Menu,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  User,
+  UserCog,
+  Users,
+  X,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
-const NAV_ITEMS = [
-  { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/admin/users', icon: Users, label: 'All Users' },
-  { href: '/admin/recruiters', icon: UserCog, label: 'Recruiters' },
-  { href: '/admin/candidate-verification', icon: UserCheck, label: 'Candidate Verify' },
-  { href: '/admin/recruiter-verification', icon: Shield, label: 'Recruiter Verify' },
-  { href: '/admin/company-documents', icon: ShieldCheck, label: 'Company Docs' },
-  { href: '/admin/job-approval', icon: Briefcase, label: 'Job Approvals' },
-  { href: '/admin/payments', icon: CreditCard, label: 'Payments' },
-  { href: '/admin/analytics', icon: BarChart2, label: 'Analytics' },
-  { href: '/admin/support-tickets', icon: MessageSquare, label: 'Support Tickets' },
+/**
+ * One privileged role, so there is no per-item permission check here — the
+ * proxy gates /admin wholesale and every API route calls `requireAdmin`.
+ */
+const NAV_GROUPS: Array<{
+  label: string;
+  items: Array<{ href: string; icon: typeof LayoutDashboard; label: string }>;
+}> = [
+  {
+    label: 'Overview',
+    items: [{ href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' }],
+  },
+  {
+    label: 'People',
+    items: [
+      { href: '/admin/job-seekers', icon: Users, label: 'Job Seekers' },
+      { href: '/admin/employers', icon: UserCog, label: 'Employers' },
+      { href: '/admin/companies', icon: Building2, label: 'Companies' },
+    ],
+  },
+  {
+    label: 'Hiring',
+    items: [
+      { href: '/admin/jobs', icon: Briefcase, label: 'Jobs' },
+      { href: '/admin/applications', icon: FileText, label: 'Applications' },
+      { href: '/admin/interviews', icon: CalendarCheck, label: 'Interviews' },
+    ],
+  },
+  {
+    label: 'Taxonomy',
+    items: [
+      { href: '/admin/categories', icon: Blocks, label: 'Categories' },
+      { href: '/admin/skills', icon: Sparkles, label: 'Skills' },
+      { href: '/admin/qualifications', icon: GraduationCap, label: 'Qualifications' },
+      { href: '/admin/locations', icon: MapPin, label: 'Locations' },
+    ],
+  },
+  {
+    label: 'Content',
+    items: [
+      { href: '/admin/blog', icon: FileText, label: 'Blog' },
+      { href: '/admin/cms', icon: Blocks, label: 'CMS' },
+      { href: '/admin/notifications', icon: Bell, label: 'Notifications' },
+      { href: '/admin/email-templates', icon: Mail, label: 'Email Templates' },
+    ],
+  },
+  {
+    label: 'Platform',
+    items: [
+      { href: '/admin/reports', icon: BarChart3, label: 'Reports & Analytics' },
+      { href: '/admin/support', icon: LifeBuoy, label: 'Support' },
+      { href: '/admin/settings', icon: Settings, label: 'Website Settings' },
+      { href: '/admin/security', icon: ShieldCheck, label: 'Security & Logs' },
+      { href: '/admin/profile', icon: User, label: 'Profile' },
+    ],
+  },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth();
 
-  const sidebar = (mobile: boolean) => (
-    <aside
-      className={`flex flex-col h-full bg-white border-r border-line transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${
-        mobile ? 'w-[280px] shadow-[0_16px_32px_rgba(16,24,40,0.10),0_40px_80px_rgba(16,24,40,0.14)]' : collapsed ? 'w-[76px]' : 'w-[264px]'
-      }`}
-    >
-      {/* Logo */}
-      <div className={`flex items-center h-[72px] px-4 border-b border-line-soft shrink-0 ${collapsed && !mobile ? 'justify-center' : 'justify-between'}`}>
-        {(!collapsed || mobile) ? (
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="relative w-9 h-9 rounded-[12px] bg-gradient-to-br from-[#2B3648] to-[#141A24] flex items-center justify-center shadow-[0_4px_10px_rgba(20,26,36,0.28)] transition-transform duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-0.5">
-              <Shield className="w-[17px] h-[17px] text-white" strokeWidth={2.2} />
-              <span className="absolute inset-x-1.5 top-px h-px bg-white/35 rounded-full" />
-            </div>
-            <div className="leading-none">
-              <span className="block text-[15.5px] font-extrabold tracking-[-0.03em] text-ink font-[family-name:var(--font-sora)]">Motojobs.in</span>
-              <span className="block text-[8.5px] font-bold tracking-[0.2em] text-ink-faint uppercase mt-1">Control</span>
-            </div>
-          </Link>
-        ) : (
-          <div className="relative w-9 h-9 rounded-[12px] bg-gradient-to-br from-[#2B3648] to-[#141A24] flex items-center justify-center shadow-[0_4px_10px_rgba(20,26,36,0.28)]">
-            <Shield className="w-[17px] h-[17px] text-white" strokeWidth={2.2} />
-          </div>
-        )}
-        {!mobile && !collapsed && (
-          <button
-            onClick={() => setCollapsed(true)}
-            className="text-ink-faint hover:text-ink hover:bg-canvas p-1.5 rounded-[10px] transition-all duration-200"
-            aria-label="Collapse sidebar"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {collapsed && !mobile && (
-        <button
-          onClick={() => setCollapsed(false)}
-          className="mx-auto mt-3 text-ink-faint hover:text-ink hover:bg-canvas p-1.5 rounded-[10px] transition-all duration-200"
-          aria-label="Expand sidebar"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      )}
-
-      {/* Admin Badge */}
-      {(!collapsed || mobile) && (
-        <div className="px-4 pt-4">
-          <span className="inline-flex items-center gap-1.5 text-[10px] bg-canvas text-ink-soft border border-line rounded-full px-3 py-1.5 font-bold uppercase tracking-[0.12em]">
-            <span className="w-1.5 h-1.5 rounded-full bg-ink" />
-            Admin Panel
-          </span>
-        </div>
-      )}
-
-      {/* User Info */}
-      {(!collapsed || mobile) && user && (
-        <div className="px-4 py-4 shrink-0">
-          <div className="flex items-center gap-3 bg-canvas border border-line-soft rounded-[16px] p-3">
-            <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-[#2B3648] to-[#141A24] flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-[0_3px_8px_rgba(20,26,36,0.24)]">
-              {user.name[0]}
-            </div>
-            <div className="min-w-0">
-              <p className="text-[13.5px] font-bold text-ink truncate leading-tight">{user.name}</p>
-              <p className="text-[11.5px] text-ink-faint truncate mt-0.5">Administrator</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto scroll-slim">
-        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
-          const active = pathname === href;
-          return (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileOpen(false)}
-              title={collapsed && !mobile ? label : undefined}
-              className={`relative flex items-center gap-3 px-3 py-2.5 rounded-[13px] transition-all duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] group ${
-                active
-                  ? 'bg-canvas text-ink font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]'
-                  : 'text-ink-muted hover:text-ink hover:bg-canvas'
-              } ${collapsed && !mobile ? 'justify-center' : ''}`}
-            >
-              {active && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-gradient-to-b from-[#2B3648] to-[#141A24]" />
-              )}
-              <Icon className={`w-[18px] h-[18px] shrink-0 transition-transform duration-300 ${active ? '' : 'group-hover:scale-110'}`} strokeWidth={active ? 2.4 : 2} />
-              {(!collapsed || mobile) && <span className="text-[13.5px] font-medium">{label}</span>}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-line-soft shrink-0">
-        <button
-          onClick={logout}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-[13px] w-full text-ink-muted hover:text-critical hover:bg-critical-soft transition-all duration-300 ${collapsed && !mobile ? 'justify-center' : ''}`}
-        >
-          <LogOut className="w-[18px] h-[18px] shrink-0" />
-          {(!collapsed || mobile) && <span className="text-[13.5px] font-medium">Sign out</span>}
-        </button>
-      </div>
-    </aside>
-  );
-
   return (
     <div className="flex h-screen bg-canvas overflow-hidden">
-      <div className="hidden lg:flex shrink-0">{sidebar(false)}</div>
+      <div className="hidden lg:flex shrink-0">
+        <Sidebar pathname={pathname} onNavigate={() => setMobileOpen(false)} onLogout={logout} />
+      </div>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-[#0B1220]/35 backdrop-blur-[6px] animate-fade-in" onClick={() => setMobileOpen(false)} />
-          <div className="absolute left-0 top-0 bottom-0 animate-slide-in">{sidebar(true)}</div>
+          <div className="absolute inset-0 bg-[#0B1220]/40" onClick={() => setMobileOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-0 shadow-e4 animate-slide-in">
+            <Sidebar
+              mobile
+              pathname={pathname}
+              onNavigate={() => setMobileOpen(false)}
+              onLogout={logout}
+            />
+          </div>
         </div>
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-[72px] glass-nav border-b border-line flex items-center justify-between px-5 sm:px-7 shrink-0 z-10">
+        <header className="h-[64px] bg-white border-b border-line flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0">
           <button
-            className="lg:hidden text-ink-soft hover:text-ink hover:bg-canvas p-2.5 rounded-[12px] transition-all duration-200"
+            className="lg:hidden text-ink-soft hover:text-brand-700 p-2 -ml-2 rounded-[10px]"
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex-1" />
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 text-[11px] text-ink-soft bg-white border border-line px-4 py-2.5 rounded-[12px] font-bold uppercase tracking-[0.12em] shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+
+          <div className="min-w-0 flex-1">
+            <p className="text-[14.5px] font-bold text-ink truncate">
+              {user?.name ? `Hello, ${user.name.split(' ')[0]}` : 'Admin'}
+            </p>
+            <p className="text-[12px] text-ink-muted truncate">Platform control</p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="hidden sm:inline-flex items-center gap-2 text-[10.5px] text-ink-soft bg-canvas border border-line px-3 py-2 rounded-[10px] font-bold uppercase tracking-[0.1em]">
               <span className="w-1.5 h-1.5 rounded-full bg-positive" />
-              Admin Mode
+              Super Admin
             </span>
-            {user && (
-              <div className="w-9 h-9 rounded-[12px] bg-gradient-to-br from-[#2B3648] to-[#141A24] flex items-center justify-center text-white text-[13px] font-bold shadow-[0_3px_8px_rgba(20,26,36,0.24)]">
-                {user.name[0]}
-              </div>
-            )}
+            <Link href="/admin/profile" aria-label="Profile">
+              <span className="w-9 h-9 rounded-[11px] grad-brand flex items-center justify-center text-white text-[13px] font-bold">
+                {user?.name?.[0]?.toUpperCase() ?? 'A'}
+              </span>
+            </Link>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto bg-canvas p-5 sm:p-7 lg:p-9">
-          <div className="animate-fade-up">{children}</div>
-        </main>
+
+        <main className="flex-1 overflow-y-auto bg-canvas p-4 sm:p-6">{children}</main>
       </div>
     </div>
+  );
+}
+
+function Sidebar({
+  mobile = false,
+  pathname,
+  onNavigate,
+  onLogout,
+}: {
+  mobile?: boolean;
+  pathname: string;
+  onNavigate: () => void;
+  onLogout: () => void;
+}) {
+  return (
+    <aside className="flex flex-col h-full w-[256px] bg-white border-r border-line">
+      <div className="flex items-center justify-between h-[64px] px-5 border-b border-line-soft shrink-0">
+        <Link href="/admin/dashboard" className="flex items-center gap-2.5">
+          <span className="w-9 h-9 rounded-[12px] grad-brand flex items-center justify-center">
+            <Gauge className="w-[17px] h-[17px] text-white" strokeWidth={2.2} />
+          </span>
+          <span className="leading-none">
+            <span className="block text-[15px] font-extrabold tracking-[-0.03em] text-ink">
+              Motojobs.in
+            </span>
+            <span className="block text-[8.5px] font-bold tracking-[0.2em] text-ink-faint uppercase mt-1">
+              Admin
+            </span>
+          </span>
+        </Link>
+        {mobile && (
+          <button
+            onClick={onNavigate}
+            aria-label="Close menu"
+            className="text-ink-faint hover:text-ink p-1.5 rounded-[10px]"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      <nav className="flex-1 px-3 py-4 overflow-y-auto scroll-slim">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label} className="mb-5 last:mb-0">
+            <p className="px-3.5 mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-ink-faint">
+              {group.label}
+            </p>
+            <div className="space-y-0.5">
+              {group.items.map(({ href, icon: Icon, label }) => {
+                const active = pathname === href;
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={onNavigate}
+                    className={`flex items-center gap-3 px-3.5 py-2 rounded-[10px] transition-colors duration-200 ${
+                      active
+                        ? 'bg-brand-50 text-brand-700 font-semibold'
+                        : 'text-ink-muted hover:text-brand-700 hover:bg-canvas'
+                    }`}
+                  >
+                    <Icon
+                      className="w-[17px] h-[17px] shrink-0"
+                      strokeWidth={active ? 2.4 : 2}
+                    />
+                    <span className="text-[13px]">{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <div className="px-3 py-4 border-t border-line-soft shrink-0">
+        <button
+          onClick={onLogout}
+          className="flex items-center gap-3 px-3.5 py-2 rounded-[10px] w-full text-ink-muted hover:text-critical hover:bg-critical-soft transition-colors duration-200"
+        >
+          <LogOut className="w-[17px] h-[17px] shrink-0" />
+          <span className="text-[13px] font-medium">Logout</span>
+        </button>
+      </div>
+    </aside>
   );
 }

@@ -27,11 +27,22 @@ export interface JWTPayload {
   exp?: number;
 }
 
-export async function signJWT(payload: Omit<JWTPayload, "iat" | "exp">) {
+/**
+ * Token lifetimes. The cookie's max-age mirrors these exactly — a cookie that
+ * outlives its token would leave the user apparently signed in until the first
+ * request bounced them to /login.
+ */
+const SESSION_MAX_AGE = 60 * 60 * 24;
+const SESSION_MAX_AGE_REMEMBERED = 60 * 60 * 24 * 30;
+
+export async function signJWT(
+  payload: Omit<JWTPayload, "iat" | "exp">,
+  remember = false
+) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(remember ? "30d" : "1d")
     .sign(getSecret());
 }
 
@@ -80,13 +91,13 @@ export function getOTPExpiry(): Date {
 
 export const SESSION_COOKIE = "token";
 
-export function setSessionCookie(res: NextResponse, token: string) {
+export function setSessionCookie(res: NextResponse, token: string, remember = false) {
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: remember ? SESSION_MAX_AGE_REMEMBERED : SESSION_MAX_AGE,
   });
 }
 
