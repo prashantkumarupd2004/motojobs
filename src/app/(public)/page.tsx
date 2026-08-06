@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -10,6 +11,19 @@ import {
   Bell,
   ArrowRight,
 } from 'lucide-react';
+import { salaryRangeLabel } from '@/lib/automotive';
+
+const initials = (name: string) =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
+
+function postedAgo(iso: string) {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return '1d ago';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
 
 /* ================================================================
    COMPANY CARD — 3D hover card component
@@ -19,19 +33,14 @@ function CompanyCard({
   name,
   jobs,
   logo,
-  bg,
-  border,
-  fill = false,
 }: {
   href: string;
   name: string;
-  jobs: string;
-  logo: string;
-  bg: string;
-  border: string;
-  /** true for logos that ship as a full-bleed colored tile rather than art on transparency */
-  fill?: boolean;
+  jobs: number;
+  /** Null for companies that have not uploaded one — initials stand in. */
+  logo: string | null;
 }) {
+  const border = '#BFDBFE';
   return (
     <Link
       href={href}
@@ -59,24 +68,24 @@ function CompanyCard({
       {/* Logo container with subtle bg tint */}
       <div
         className="w-14 h-14 rounded-[14px] flex items-center justify-center mb-3 shadow-[0_2px_8px_rgba(0,0,0,0.08)] group-hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all duration-300 overflow-hidden"
-        style={{ background: bg }}
+        style={{ background: logo ? '#FFFFFF' : '#EFF6FF' }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={logo}
-          alt={`${name} logo`}
-          width={56}
-          height={56}
-          loading="lazy"
-          style={
-            fill
-              ? { width: '100%', height: '100%', objectFit: 'cover' }
-              : { width: '82%', height: '82%', objectFit: 'contain' }
-          }
-        />
+        {logo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={logo}
+            alt={`${name} logo`}
+            width={56}
+            height={56}
+            loading="lazy"
+            style={{ width: '82%', height: '82%', objectFit: 'contain' }}
+          />
+        ) : (
+          <span className="text-[15px] font-bold text-[#1D4ED8]">{initials(name)}</span>
+        )}
       </div>
       <p className="text-[11.5px] font-semibold text-[#0F172A] leading-tight mb-0.5">{name}</p>
-      <p className="text-[10.5px] text-[#94A3B8]">{jobs} Jobs</p>
+      <p className="text-[10.5px] text-[#94A3B8]">{jobs} {jobs === 1 ? 'Job' : 'Jobs'}</p>
     </Link>
   );
 }
@@ -161,60 +170,34 @@ function OthersCatIcon() {
    ================================================================ */
 
 const STATS = [
-  { value: '5,000+',  label: 'Active Jobs',         icon: Briefcase },
-  { value: '1,200+',  label: 'Companies Hiring',    icon: Building2 },
-  { value: '25,000+', label: 'Job Seekers',         icon: Users },
-  { value: '3,500+',  label: 'Jobs Posted Monthly', icon: FileText },
-];
+  { key: 'activeJobs',      label: 'Active Jobs',         icon: Briefcase },
+  { key: 'companiesHiring', label: 'Companies Hiring',    icon: Building2 },
+  { key: 'jobSeekers',      label: 'Job Seekers',         icon: Users },
+  { key: 'postedThisMonth', label: 'Jobs Posted (30d)',   icon: FileText },
+] as const;
 
-const CATEGORIES = [
-  { id: 'sales',       label: 'Sales & Marketing',   count: '1,250', Icon: SalesMarketingIcon,  accent: '#3B82F6' },
-  { id: 'service',     label: 'Service & Support',   count: '1,150', Icon: ServiceSupportIcon,  accent: '#10B981' },
-  { id: 'technician',  label: 'Technicians',         count: '950',   Icon: TechnicianCatIcon,   accent: '#F59E0B' },
-  { id: 'engineering', label: 'Engineering',         count: '750',   Icon: EngineeringCatIcon,  accent: '#8B5CF6' },
-  { id: 'body-shop',   label: 'Body Shop',           count: '450',   Icon: BodyShopCatIcon,     accent: '#EF4444' },
-  { id: 'parts',       label: 'Parts & Accessories', count: '400',   Icon: PartsCatIcon,        accent: '#0EA5E9' },
-  { id: 'management',  label: 'Management',          count: '300',   Icon: ManagementCatIcon,   accent: '#EC4899' },
-  { id: 'others',      label: 'Others',              count: '800',   Icon: OthersCatIcon,       accent: '#64748B' },
-];
+/**
+ * Presentation only — the categories themselves come from the API, which reads
+ * the admin-managed list. A category the admin adds gets the neutral icon
+ * rather than being dropped from the grid.
+ */
+const CATEGORY_STYLE: Record<string, { Icon: () => React.JSX.Element; accent: string }> = {
+  sales:          { Icon: SalesMarketingIcon, accent: '#3B82F6' },
+  service:        { Icon: ServiceSupportIcon, accent: '#10B981' },
+  'spare-parts':  { Icon: PartsCatIcon,       accent: '#0EA5E9' },
+  'body-shop':    { Icon: BodyShopCatIcon,    accent: '#EF4444' },
+  ev:             { Icon: EngineeringCatIcon, accent: '#8B5CF6' },
+  finance:        { Icon: ManagementCatIcon,  accent: '#EC4899' },
+  'pre-owned':    { Icon: TechnicianCatIcon,  accent: '#F59E0B' },
+  crm:            { Icon: ServiceSupportIcon, accent: '#14B8A6' },
+  management:     { Icon: ManagementCatIcon,  accent: '#EC4899' },
+  manufacturing:  { Icon: EngineeringCatIcon, accent: '#8B5CF6' },
+  logistics:      { Icon: TechnicianCatIcon,  accent: '#F59E0B' },
+  support:        { Icon: OthersCatIcon,      accent: '#64748B' },
+};
 
-const RECENT_JOBS = [
-  {
-    id: '1', title: 'Service Advisor',
-    company: 'Tata Motors', companyShort: 'TM',
-    logoColor: '#1D4ED8', logoBg: '#EFF6FF',
-    location: 'Mumbai, Maharashtra', experience: '2-4 Yrs',
-    salary: '₹ 3-5 LPA', type: 'Full Time', posted: '2h ago', hot: true,
-  },
-  {
-    id: '2', title: 'Automobile Technician',
-    company: 'Mahindra & Mahindra', companyShort: 'MM',
-    logoColor: '#DC2626', logoBg: '#FEF2F2',
-    location: 'Pune, Maharashtra', experience: '1-3 Yrs',
-    salary: '₹ 2-4 LPA', type: 'Full Time', posted: '5h ago', hot: false,
-  },
-  {
-    id: '3', title: 'Sales Executive – EV Segment',
-    company: 'Ather Energy', companyShort: 'AE',
-    logoColor: '#059669', logoBg: '#ECFDF5',
-    location: 'Bangalore, Karnataka', experience: '0-2 Yrs',
-    salary: '₹ 3-5 LPA', type: 'Full Time', posted: '1d ago', hot: true,
-  },
-  {
-    id: '4', title: 'Workshop Manager',
-    company: 'Maruti Suzuki', companyShort: 'MS',
-    logoColor: '#475569', logoBg: '#F8FAFC',
-    location: 'Delhi, NCR', experience: '5-8 Yrs',
-    salary: '₹ 7-11 LPA', type: 'Full Time', posted: '2d ago', hot: false,
-  },
-  {
-    id: '5', title: 'Auto Electrician',
-    company: 'Hero MotoCorp', companyShort: 'HM',
-    logoColor: '#B91C1C', logoBg: '#FEF2F2',
-    location: 'Jaipur, Rajasthan', experience: '2-5 Yrs',
-    salary: '₹ 2.5-4 LPA', type: 'Full Time', posted: '3d ago', hot: false,
-  },
-];
+const DEFAULT_CATEGORY_STYLE = { Icon: OthersCatIcon, accent: '#64748B' };
+
 
 const JOB_SEEKER_FEATURES = [
   {
@@ -241,31 +224,13 @@ const JOB_SEEKER_FEATURES = [
   {
     icon: Users,
     title: 'Industry Network',
-    sub: 'Connect with 25,000+ automotive professionals across India',
+    sub: 'Connect with automotive professionals across India',
     color: '#8B5CF6',
     bg: '#F5F3FF',
   },
 ];
 
-const COMPANIES = [
-  { name: 'Maruti Suzuki', href: '/companies?q=Maruti+Suzuki', jobs: '180+', logo: '/logos/marutisuzuki.png', bg: '#FFFFFF', border: '#BFDBFE' },
-  { name: 'Tata Motors',   href: '/companies?q=Tata+Motors',   jobs: '140+', logo: '/logos/tatamotors.png',   bg: '#FFFFFF', border: '#C7D2FE', fill: true },
-  { name: 'Mahindra',      href: '/companies?q=Mahindra',      jobs: '120+', logo: '/logos/mahindra.png',     bg: '#FFFFFF', border: '#FECACA', fill: true },
-  { name: 'Hyundai India', href: '/companies?q=Hyundai',       jobs: '95+',  logo: '/logos/hyundai.png',      bg: '#FFFFFF', border: '#DDD6FE' },
-  { name: 'Ather Energy',  href: '/companies?q=Ather+Energy',  jobs: '75+',  logo: '/logos/atherenergy.png',  bg: '#FFFFFF', border: '#BBF7D0', fill: true },
-  { name: 'Hero MotoCorp', href: '/companies?q=Hero+MotoCorp', jobs: '110+', logo: '/logos/heromotocorp.png', bg: '#FFFFFF', border: '#FECACA' },
-  { name: 'TVS Motor',     href: '/companies?q=TVS+Motor',     jobs: '88+',  logo: '/logos/tvsmotor.png',     bg: '#FFFFFF', border: '#BFDBFE' },
-  { name: 'Bajaj Auto',    href: '/companies?q=Bajaj+Auto',    jobs: '92+',  logo: '/logos/bajajauto.png',    bg: '#FFFFFF', border: '#FED7AA' },
-];
-
 const POPULAR_SEARCHES = ['Service Advisor', 'Mechanic', 'Sales Executive', 'BDE', 'Technician'];
-
-const EV_JOBS = [
-  { title: 'EV Technician', company: 'Ather Energy', location: 'Bangalore', salary: '₹ 3.5-6 LPA', tag: 'High Demand' },
-  { title: 'Battery Engineer', company: 'Tata Motors EV', location: 'Pune', salary: '₹ 8-14 LPA', tag: 'Urgent' },
-  { title: 'EV Sales Consultant', company: 'Ola Electric', location: 'Hyderabad', salary: '₹ 3-5 LPA', tag: 'New' },
-  { title: 'Charging Infra Engineer', company: 'TPEM', location: 'Mumbai', salary: '₹ 6-10 LPA', tag: 'Hot' },
-];
 
 const TRUST_ITEMS = [
   { icon: '🔒', title: 'Verified Employers', desc: 'Every company is manually verified before posting' },
@@ -283,7 +248,48 @@ const HERO_IMAGE_MASK = [
    PAGE
    ================================================================ */
 
+interface HomeJob {
+  id: string;
+  title: string;
+  location: string | null;
+  experience: string | null;
+  jobType: string | null;
+  minSalary: number | null;
+  maxSalary: number | null;
+  createdAt: string;
+  company: { name: string; logo: string | null; isVerified: boolean } | null;
+}
+
+interface HomeData {
+  stats: { activeJobs: number; companiesHiring: number; jobSeekers: number; postedThisMonth: number };
+  categories: Array<{ id: string; label: string; blurb: string | null; count: number }>;
+  recentJobs: HomeJob[];
+  evJobs: HomeJob[];
+  companies: Array<{ id: string; name: string; slug: string | null; logo: string | null; isVerified: boolean; openJobs: number }>;
+}
+
+
 export default function HomePage() {
+  const [data, setData] = useState<HomeData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let live = true;
+    fetch('/api/home')
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((json) => { if (live) setData(json); })
+      // A failed load leaves every section on its own empty state rather than
+      // showing numbers the database has not confirmed.
+      .catch(() => {})
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, []);
+
+  const categories = data?.categories ?? [];
+  const recentJobs = data?.recentJobs ?? [];
+  const evJobs = data?.evJobs ?? [];
+  const companies = data?.companies ?? [];
+
   return (
     <div className="bg-white min-h-screen">
 
@@ -364,13 +370,15 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-[20px] border border-[#E8EEF8] overflow-hidden" style={{ boxShadow: '0 8px 32px rgba(15,23,42,0.10)' }}>
             <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#F1F5F9]">
-              {STATS.map(({ value, label, icon: Icon }) => (
+              {STATS.map(({ key, label, icon: Icon }) => (
                 <div key={label} className="flex items-center gap-4 px-6 lg:px-8 py-7">
                   <div className="w-12 h-12 rounded-[12px] bg-[#EFF6FF] flex items-center justify-center shrink-0">
                     <Icon className="w-5 h-5 text-[#2563EB]" strokeWidth={1.8} />
                   </div>
                   <div>
-                    <div className="font-extrabold text-[#0F172A] leading-none tracking-[-0.03em]" style={{ fontSize: '28px' }}>{value}</div>
+                    <div className="font-extrabold text-[#0F172A] leading-none tracking-[-0.03em]" style={{ fontSize: '28px' }}>
+                      {data ? data.stats[key].toLocaleString('en-IN') : loading ? '—' : '0'}
+                    </div>
                     <div className="text-[13px] text-[#64748B] mt-1 font-medium">{label}</div>
                   </div>
                 </div>
@@ -397,7 +405,9 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {CATEGORIES.map(({ id, label, count, Icon, accent }) => (
+            {categories.map(({ id, label, count }) => {
+              const { Icon, accent } = CATEGORY_STYLE[id] ?? DEFAULT_CATEGORY_STYLE;
+              return (
               <Link
                 key={id}
                 href={`/jobs?category=${encodeURIComponent(id)}`}
@@ -411,11 +421,14 @@ export default function HomePage() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[13.5px] font-bold text-[#0F172A] leading-tight group-hover:text-[#2563EB] transition-colors truncate">{label}</p>
-                  <p className="text-[12px] text-[#94A3B8] mt-0.5 font-medium">{count} Jobs</p>
+                  <p className="text-[12px] text-[#94A3B8] mt-0.5 font-medium">
+                    {count === 0 ? 'No openings yet' : `${count.toLocaleString('en-IN')} ${count === 1 ? 'Job' : 'Jobs'}`}
+                  </p>
                 </div>
                 <ArrowRight className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all duration-200 shrink-0 ml-auto" />
               </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -441,33 +454,42 @@ export default function HomePage() {
 
               <div className="bg-white border border-[#E8EDF5] rounded-[20px] overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(15,23,42,0.06)' }}>
                 <div className="divide-y divide-[#F8FAFC]">
-                  {RECENT_JOBS.map((job) => (
+                  {loading ? (
+                    <div className="px-5 py-10 text-center text-[13px] text-[#94A3B8]">Loading…</div>
+                  ) : recentJobs.length === 0 ? (
+                    <div className="px-5 py-10 text-center">
+                      <p className="text-[14px] font-semibold text-[#0F172A]">No openings live right now</p>
+                      <p className="text-[12.5px] text-[#64748B] mt-1">
+                        New roles appear here the moment an employer posts one.
+                      </p>
+                    </div>
+                  ) : recentJobs.map((job) => (
                     <Link key={job.id} href={`/jobs/${job.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-[#F8FAFD] transition-colors duration-150 group">
-                      <div className="w-11 h-11 rounded-[12px] flex items-center justify-center text-[13px] font-bold shrink-0 group-hover:scale-105 transition-transform duration-200" style={{ background: job.logoBg, color: job.logoColor }}>
-                        {job.companyShort}
+                      <div className="w-11 h-11 rounded-[12px] flex items-center justify-center text-[13px] font-bold shrink-0 group-hover:scale-105 transition-transform duration-200" style={{ background: '#EFF6FF', color: '#1D4ED8' }}>
+                        {initials(job.company?.name ?? 'Company')}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <h3 className="text-[14px] font-semibold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate">{job.title}</h3>
-                          {job.hot && <span className="shrink-0 text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#D97706]">🔥 Hot</span>}
+                          {job.company?.isVerified && <span className="shrink-0 text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669]">Verified</span>}
                         </div>
-                        <p className="text-[12.5px] text-[#64748B] mb-1.5">{job.company}</p>
+                        <p className="text-[12.5px] text-[#64748B] mb-1.5">{job.company?.name ?? 'Company'}</p>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className="flex items-center gap-1 text-[11.5px] text-[#94A3B8]"><MapPin className="w-3 h-3" />{job.location}</span>
-                          <span className="flex items-center gap-1 text-[11.5px] text-[#94A3B8]"><Briefcase className="w-3 h-3" />{job.experience}</span>
-                          <span className="text-[11.5px] font-semibold text-[#059669]">{job.salary}</span>
+                          <span className="flex items-center gap-1 text-[11.5px] text-[#94A3B8]"><MapPin className="w-3 h-3" />{job.location || 'India'}</span>
+                          {job.experience && <span className="flex items-center gap-1 text-[11.5px] text-[#94A3B8]"><Briefcase className="w-3 h-3" />{job.experience}</span>}
+                          <span className="text-[11.5px] font-semibold text-[#059669]">{salaryRangeLabel(job.minSalary, job.maxSalary)}</span>
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
-                        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] block mb-1.5">{job.type}</span>
-                        <span className="text-[11px] text-[#94A3B8]">{job.posted}</span>
+                        {job.jobType && <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#EFF6FF] text-[#2563EB] block mb-1.5">{job.jobType}</span>}
+                        <span className="text-[11px] text-[#94A3B8]">{postedAgo(job.createdAt)}</span>
                       </div>
                     </Link>
                   ))}
                 </div>
                 <div className="px-5 py-4 border-t border-[#F1F5F9] bg-[#FAFBFF]">
                   <Link href="/jobs" className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition-colors">
-                    Browse All 5,000+ Jobs <ArrowRight className="w-3.5 h-3.5" />
+                    Browse All Jobs <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>
@@ -524,11 +546,30 @@ export default function HomePage() {
               All Companies <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-            {COMPANIES.map((c) => (
-              <CompanyCard key={c.name} {...c} />
-            ))}
-          </div>
+          {companies.length === 0 ? (
+            <div className="bg-white border border-[#E8EDF5] rounded-[18px] py-12 text-center">
+              <p className="text-[14px] font-semibold text-[#0F172A]">
+                {loading ? 'Loading…' : 'No employers hiring yet'}
+              </p>
+              {!loading && (
+                <p className="text-[12.5px] text-[#64748B] mt-1">
+                  Companies appear here once they have a live opening.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
+              {companies.map((c) => (
+                <CompanyCard
+                  key={c.id}
+                  href={c.slug ? `/companies/${c.slug}` : `/companies?search=${encodeURIComponent(c.name)}`}
+                  name={c.name}
+                  jobs={c.openJobs}
+                  logo={c.logo}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -553,16 +594,23 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {EV_JOBS.map(({ title, company, location, salary, tag }) => (
-                  <Link key={title} href="/jobs?category=ev" className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-[16px] p-4 transition-all duration-200 hover:-translate-y-[2px] group block">
+                {evJobs.length === 0 ? (
+                  <div className="sm:col-span-2 bg-white/10 border border-white/20 rounded-[16px] p-6 text-center">
+                    <p className="text-[13.5px] font-semibold text-white">No EV roles live right now</p>
+                    <p className="text-[12px] text-[#93C5FD] mt-1">
+                      Check back soon — EV openings are added as employers post them.
+                    </p>
+                  </div>
+                ) : evJobs.map((job) => (
+                  <Link key={job.id} href={`/jobs/${job.id}`} className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-[16px] p-4 transition-all duration-200 hover:-translate-y-[2px] group block">
                     <div className="flex items-start justify-between mb-2">
-                      <p className="text-[13.5px] font-bold text-white leading-tight group-hover:text-[#67E8F9] transition-colors">{title}</p>
-                      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#22D3EE]/20 text-[#67E8F9] ml-2">{tag}</span>
+                      <p className="text-[13.5px] font-bold text-white leading-tight group-hover:text-[#67E8F9] transition-colors">{job.title}</p>
+                      {job.jobType && <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#22D3EE]/20 text-[#67E8F9] ml-2">{job.jobType}</span>}
                     </div>
-                    <p className="text-[12px] text-[#93C5FD] mb-1">{company}</p>
+                    <p className="text-[12px] text-[#93C5FD] mb-1">{job.company?.name ?? 'Company'}</p>
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-[11px] text-[#94A3B8]"><MapPin className="w-3 h-3" />{location}</span>
-                      <span className="text-[11.5px] font-semibold text-[#34D399]">{salary}</span>
+                      <span className="flex items-center gap-1 text-[11px] text-[#94A3B8]"><MapPin className="w-3 h-3" />{job.location || 'India'}</span>
+                      <span className="text-[11.5px] font-semibold text-[#34D399]">{salaryRangeLabel(job.minSalary, job.maxSalary)}</span>
                     </div>
                   </Link>
                 ))}
@@ -610,7 +658,7 @@ export default function HomePage() {
       <section className="py-12 bg-white border-t border-[#F1F5F9]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h2 className="text-[22px] font-bold text-[#0F172A] tracking-tight">Why 25,000+ professionals choose MotoJobs</h2>
+            <h2 className="text-[22px] font-bold text-[#0F172A] tracking-tight">Why professionals choose MotoJobs</h2>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
             {TRUST_ITEMS.map(({ icon, title, desc }) => (

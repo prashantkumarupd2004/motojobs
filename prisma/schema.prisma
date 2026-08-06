@@ -730,8 +730,8 @@ model Subscription {
   @@map("subscriptions")
 }
 
-/// Author-managed blog posts. `src/lib/blog.ts` still serves the public pages;
-/// this table backs the admin editor and takes over once posts exist here.
+/// Author-managed blog posts. This table serves the public blog pages; the array
+/// in `src/lib/blog.ts` is only seed content, inserted once on first read.
 model BlogPost {
   id          String    @id @default(cuid())
   slug        String    @unique

@@ -16,9 +16,9 @@ import { apiFetch } from '@/lib/http';
 import {
   EXPERIENCE_BANDS,
   INDIAN_STATES,
-  QUALIFICATIONS,
   formatINR,
 } from '@/lib/automotive';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
 import { useAdminList } from '@/hooks/useAdminList';
 import DataTable, { type Column } from '@/components/admin/DataTable';
 import Drawer, { DetailRow, DetailSection } from '@/components/admin/Drawer';
@@ -136,6 +136,8 @@ function JobSeekers() {
   const [verified, setVerified] = useState(params.get('verified') ?? '');
   const [from, setFrom] = useState('');
   const [page, setPage] = useState(1);
+
+  const qualifications = useTaxonomy('QUALIFICATION');
 
   const [detail, setDetail] = useState<Detail | null>(null);
   const [loginHistory, setLoginHistory] = useState<LoginRow[]>([]);
@@ -351,7 +353,7 @@ function JobSeekers() {
           onChange={setQualification}
           placeholder="All qualifications"
           aria-label="Filter by qualification"
-          options={QUALIFICATIONS.map((q) => ({ value: q, label: q }))}
+          options={qualifications.map((q) => ({ value: q.value, label: q.label }))}
         />
         <Select
           value={experience}

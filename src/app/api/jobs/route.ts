@@ -1,8 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
-import { serializeJob } from "@/lib/jobs";
+import { serializeJob, candidateArea, hasArea, locationRank } from "@/lib/jobs";
 import { getEntitlements } from "@/lib/subscription";
+
+/**
+ * The signed-in candidate's home and preferred locations, or null when there is
+ * nobody to rank for — anonymous visitors, employers, and candidates who never
+ * filled in a location all fall through to plain newest-first ordering rather
+ * than seeing an error.
+ */
+async function candidateAreaFor(req: NextRequest) {
+  const user = await getAuthUser(req);
+  if (!user || user.role !== "CANDIDATE") return null;
+
+  const candidate = await prisma.candidate.findUnique({
+    where: { userId: user.userId },
+    select: { currentCity: true, currentState: true, preferredLocations: true },
+  });
+  if (!candidate) return null;
+
+  const area = candidateArea(candidate);
+  if (!hasArea(area)) return null;
+
+  // `area` is normalised for matching; the raw value is what the UI shows.
+  return { area, label: candidate.currentCity || candidate.currentState || null };
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,9 +37,19 @@ export async function GET(req: NextRequest) {
     const jobType = searchParams.get("jobType") || "";
     const workMode = searchParams.get("workMode") || "";
     const minSalary = searchParams.get("minSalary");
+    const maxSalary = searchParams.get("maxSalary");
     const experience = searchParams.get("experience") || "";
     const skills = searchParams.get("skills") || "";
     const category = searchParams.get("category") || "";
+    const nearMe = searchParams.get("nearMe") === "1";
+    const sort = searchParams.get("sort") || "latest";
+
+    // Jobs without a stated salary sort last on a salary request rather than
+    // leading the list, which is what Postgres would do for DESC by default.
+    const orderBy =
+      sort === "salary_desc" ? [{ maxSalary: { sort: "desc" as const, nulls: "last" as const } }, { createdAt: "desc" as const }]
+      : sort === "salary_asc" ? [{ minSalary: { sort: "asc" as const, nulls: "last" as const } }, { createdAt: "desc" as const }]
+      : [{ createdAt: "desc" as const }];
 
     const skip = (page - 1) * limit;
 
@@ -37,7 +70,10 @@ export async function GET(req: NextRequest) {
     if (workMode) where.workMode = { in: workMode.split(",").map((m) => m.trim()) };
     if (category) where.category = { in: category.split(",").map((c) => c.trim()) };
     if (minSalary) where.minSalary = { gte: parseFloat(minSalary) };
-    if (experience) where.experience = { contains: experience };
+    // A ceiling filters on the bottom of the job's band: a role starting above
+    // the cap is out of range, but one that merely tops out higher is not.
+    if (maxSalary) where.minSalary = { ...(where.minSalary as object ?? {}), lte: parseFloat(maxSalary) };
+    if (experience) where.experience = { in: experience.split(",").map((e) => e.trim()) };
     if (skills) {
       // `skills` is a JSON string column, so match by substring rather than `hasSome`.
       where.AND = skills
@@ -47,12 +83,46 @@ export async function GET(req: NextRequest) {
         .map((s) => ({ skills: { contains: s } }));
     }
 
+    const nearby = nearMe ? await candidateAreaFor(req) : null;
+
+    // Proximity ordering has to be applied across the whole result set, not
+    // just the requested page, or page 2 would re-sort its own slice and repeat
+    // jobs already shown on page 1. The filtered set is small enough to rank in
+    // memory; without `nearMe` the database paginates as before.
+    if (nearby) {
+      const all = await prisma.job.findMany({
+        where,
+        orderBy,
+        include: {
+          company: true,
+          recruiter: { include: { user: { select: { name: true } } } },
+          _count: { select: { applications: true } },
+        },
+      });
+
+      // Stable within a rank because `all` is already newest-first.
+      const ranked = all
+        .map((job, index) => ({ job, rank: locationRank(job, nearby.area), index }))
+        .sort((a, b) => a.rank - b.rank || a.index - b.index)
+        .map((entry) => entry.job);
+
+      return NextResponse.json({
+        jobs: ranked.slice(skip, skip + limit).map(serializeJob),
+        total: ranked.length,
+        page,
+        limit,
+        pages: Math.ceil(ranked.length / limit),
+        nearMe: true,
+        nearLabel: nearby.label,
+      });
+    }
+
     const [jobs, total] = await Promise.all([
       prisma.job.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         include: {
           company: true,
           recruiter: { include: { user: { select: { name: true } } } },

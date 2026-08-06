@@ -16,24 +16,21 @@ import {
 import { apiFetch } from '@/lib/http';
 import {
   CITIES_BY_STATE,
-  EXPERIENCE_LEVELS,
   INDIAN_STATES,
   JOB_BENEFITS,
-  JOB_CATEGORIES,
-  JOB_TYPES,
   JOINING_TIMELINES,
-  QUALIFICATIONS,
   ROLES_BY_CATEGORY,
   SALARY_BANDS,
   WORK_MODES,
-  type CategoryId,
 } from '@/lib/automotive';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
 import { Field, RadioCards, SearchableSelect, TextInput } from '@/components/form';
 import ChipSelect from '@/components/onboarding/ChipSelect';
 
 interface JobForm {
   title: string;
-  category: CategoryId;
+  /** A slug from the admin-managed list, so not narrowable to the shipped set. */
+  category: string;
   description: string;
   requirements: string;
   responsibilities: string;
@@ -86,6 +83,12 @@ export default function PostJobPage() {
   const [success, setSuccess] = useState<'DRAFT' | 'PENDING' | null>(null);
   const [error, setError] = useState('');
   const [generating, setGenerating] = useState(false);
+
+  // Admin-managed lists, so a category the admin adds is postable right away.
+  const categories = useTaxonomy('JOB_CATEGORY');
+  const jobTypes = useTaxonomy('EMPLOYMENT_TYPE');
+  const experienceLevels = useTaxonomy('EXPERIENCE_LEVEL');
+  const qualifications = useTaxonomy('QUALIFICATION');
 
   const cities = CITIES_BY_STATE[form.state] ?? [];
 
@@ -231,19 +234,21 @@ export default function PostJobPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <Field label="Job category" required>
             <SearchableSelect
-              options={JOB_CATEGORIES.map((c) => c.label)}
-              value={JOB_CATEGORIES.find((c) => c.id === form.category)?.label ?? ''}
+              options={categories.map((c) => c.label)}
+              value={categories.find((c) => c.value === form.category)?.label ?? ''}
               onChange={(label) => {
-                const found = JOB_CATEGORIES.find((c) => c.label === label);
-                if (found) setForm((p) => ({ ...p, category: found.id, title: '' }));
+                const found = categories.find((c) => c.label === label);
+                if (found) setForm((p) => ({ ...p, category: found.value, title: '' }));
               }}
               placeholder="Select a category"
             />
           </Field>
 
           <Field label="Role" required>
+            {/* An admin-added category has no shipped role list, so fall back to
+                an empty one — `allowCustom` still lets them type a title. */}
             <SearchableSelect
-              options={ROLES_BY_CATEGORY[form.category]}
+              options={ROLES_BY_CATEGORY[form.category] ?? []}
               value={form.title}
               onChange={selectRole}
               allowCustom
@@ -269,7 +274,7 @@ export default function PostJobPage() {
 
           <Field label="Employment type">
             <SearchableSelect
-              options={JOB_TYPES}
+              options={jobTypes.map((t) => t.label)}
               value={form.jobType}
               onChange={(v) => update('jobType', v)}
             />
@@ -277,7 +282,7 @@ export default function PostJobPage() {
 
           <Field label="Experience required">
             <SearchableSelect
-              options={EXPERIENCE_LEVELS}
+              options={experienceLevels.map((e) => e.label)}
               value={form.experience}
               onChange={(v) => update('experience', v)}
             />
@@ -285,7 +290,7 @@ export default function PostJobPage() {
 
           <Field label="Minimum qualification" className="sm:col-span-2">
             <SearchableSelect
-              options={QUALIFICATIONS}
+              options={qualifications.map((q) => q.label)}
               value={form.education}
               onChange={(v) => update('education', v)}
             />

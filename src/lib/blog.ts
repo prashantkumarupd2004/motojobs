@@ -1,20 +1,11 @@
 /**
- * Blog content lives here rather than in the database: the `blogs` table in the
- * schema plan is for author-managed posts, which needs an admin editor first.
- * Swapping this module for a Prisma query later touches only the two pages.
+ * Seed content for the `blogs` table. The public pages read from the database via
+ * `blog-db.ts`; these posts are inserted once so a fresh install does not render
+ * an empty blog. Kept out of `blog-types.ts` so the client bundle never carries
+ * the full article bodies.
  */
 
-export interface BlogPost {
-  slug: string;
-  title: string;
-  excerpt: string;
-  category: string;
-  author: string;
-  publishedAt: string;
-  readMinutes: number;
-  /** Paragraphs and `## ` headings, rendered by the post page. */
-  body: string[];
-}
+import type { BlogPost } from '@/lib/blog-types';
 
 export const BLOG_POSTS: BlogPost[] = [
   {
@@ -116,17 +107,3 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
   },
 ];
-
-export function getPost(slug: string): BlogPost | undefined {
-  return BLOG_POSTS.find((p) => p.slug === slug);
-}
-
-export const BLOG_CATEGORIES = Array.from(new Set(BLOG_POSTS.map((p) => p.category)));
-
-export function formatPostDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}

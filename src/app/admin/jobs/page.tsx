@@ -17,11 +17,10 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '@/lib/http';
 import {
-  EXPERIENCE_LEVELS,
   INDIAN_STATES,
-  JOB_CATEGORIES,
   salaryRangeLabel,
 } from '@/lib/automotive';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
 import { useAdminList } from '@/hooks/useAdminList';
 import DataTable, { type Column } from '@/components/admin/DataTable';
 import Drawer, { DetailRow, DetailSection } from '@/components/admin/Drawer';
@@ -128,6 +127,9 @@ function AdminJobs() {
   const [status, setStatus] = useState(params.get('status') ?? '');
   const [minSalary, setMinSalary] = useState('');
   const [page, setPage] = useState(1);
+
+  const categories = useTaxonomy('JOB_CATEGORY');
+  const experienceLevels = useTaxonomy('EXPERIENCE_LEVEL');
 
   const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -357,7 +359,7 @@ function AdminJobs() {
           onChange={setCategory}
           placeholder="All categories"
           aria-label="Filter by category"
-          options={JOB_CATEGORIES.map((c) => ({ value: c.id, label: c.label }))}
+          options={categories.map((c) => ({ value: c.value, label: c.label }))}
         />
         <Select
           value={state}
@@ -371,7 +373,7 @@ function AdminJobs() {
           onChange={setExperience}
           placeholder="Any experience"
           aria-label="Filter by experience"
-          options={EXPERIENCE_LEVELS.map((e) => ({ value: e, label: e }))}
+          options={experienceLevels.map((e) => ({ value: e.value, label: e.label }))}
         />
         <Select
           value={status}

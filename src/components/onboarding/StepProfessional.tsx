@@ -4,16 +4,17 @@ import { Briefcase } from 'lucide-react';
 import {
   CANDIDATE_TYPES,
   EXPERIENCE_BANDS,
-  INDUSTRIES,
   NOTICE_PERIODS,
   PASSING_YEARS,
-  QUALIFICATIONS,
 } from '@/lib/automotive';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
 import { Field, RadioCards, SearchableSelect, TextInput, YesNo } from '@/components/form';
 import SectionTitle from './SectionTitle';
 import type { StepProps } from './wizard-state';
 
 export default function StepProfessional({ state, patch, errors }: StepProps) {
+  const qualifications = useTaxonomy('QUALIFICATION');
+  const industries = useTaxonomy('INDUSTRY');
   const isFresher = state.candidateType === 'FRESHER';
   const isNonAutomobile = state.candidateType === 'NON_AUTOMOBILE';
 
@@ -37,7 +38,7 @@ export default function StepProfessional({ state, patch, errors }: StepProps) {
       <Field label="Highest qualification" required error={errors.qualification} htmlFor="qualification">
         <SearchableSelect
           id="qualification"
-          options={QUALIFICATIONS}
+          options={qualifications.map((q) => q.label)}
           value={state.qualification}
           onChange={(qualification) => patch({ qualification })}
           placeholder="Select your qualification"
@@ -115,7 +116,7 @@ export default function StepProfessional({ state, patch, errors }: StepProps) {
             <Field label="Current industry" required error={errors.industry} htmlFor="industry">
               <SearchableSelect
                 id="industry"
-                options={INDUSTRIES}
+                options={industries.map((i) => i.label)}
                 value={state.industry}
                 onChange={(industry) => patch({ industry })}
                 placeholder="Select your industry"

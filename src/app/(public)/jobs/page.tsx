@@ -8,34 +8,13 @@ import {
   Building2, Zap, TrendingUp, Star, Filter, Loader2,
 } from "lucide-react";
 import type { Job } from "@/types";
-import { JOB_CATEGORIES, salaryRangeLabel } from "@/lib/automotive";
+import { salaryRangeLabel } from "@/lib/automotive";
+import { useTaxonomy } from "@/hooks/useTaxonomy";
+import type { TaxonomyOption } from "@/lib/taxonomy-baseline";
 
-/* ─── Static data ─────────────────────────────────────────── */
+/* ─── Static copy ─────────────────────────────────────────── */
 
 const POPULAR_SEARCHES = ["Service Advisor", "Technician", "Mechanic", "Sales Executive", "Parts Manager"];
-
-const CATEGORY_FILTERS = [
-  { label: "Service & Technical", count: 320 },
-  { label: "Sales & Marketing",   count: 215 },
-  { label: "Parts & Accessories", count: 180 },
-  { label: "Management",          count: 145 },
-  { label: "Others",              count: 80  },
-];
-
-const EXPERIENCE_FILTERS = [
-  { label: "Fresher",    count: 120 },
-  { label: "0-2 Years",  count: 310 },
-  { label: "2-5 Years",  count: 420 },
-  { label: "5-10 Years", count: 250 },
-  { label: "10+ Years",  count: 150 },
-];
-
-const JOB_TYPE_FILTERS = [
-  { label: "Full Time",  count: 850 },
-  { label: "Part Time",  count: 120 },
-  { label: "Contract",   count: 180 },
-  { label: "Internship", count: 100 },
-];
 
 const CAREER_TIPS = [
   { title: "Top Skills Automotive Employers Look For in 2024", time: "5 min read", img: "/hero-car.png" },
@@ -43,66 +22,31 @@ const CAREER_TIPS = [
   { title: "Career Growth in Automotive Industry",             time: "6 min read", img: "/hero-job.png" },
 ];
 
-const STATIC_JOBS = [
-  {
-    id: "s1", title: "Service Advisor",
-    company: "Hyundai Motors India",    logo: "/logos/hyundai.png",
-    location: "Mumbai, Maharashtra",    experience: "2-5 Years",
-    salary: "₹ 3.5 - 6 LPA",           posted: "2d ago",
-    featured: true,  verified: true,   bg: "#003399",
-  },
-  {
-    id: "s2", title: "Senior Technician – Engine",
-    company: "Maruti Suzuki India Ltd.", logo: "/logos/marutisuzuki.png",
-    location: "Delhi, India",           experience: "3-6 Years",
-    salary: "₹ 4 - 7 LPA",             posted: "1d ago",
-    featured: false, verified: true,   bg: "#003399",
-  },
-  {
-    id: "s3", title: "Sales Executive – Commercial Vehicles",
-    company: "Tata Motors",             logo: "/logos/tatamotors.png",
-    location: "Pune, Maharashtra",      experience: "1-3 Years",
-    salary: "₹ 2.5 - 4 LPA",           posted: "3d ago",
-    featured: false, verified: true,   bg: "#1a1a2e",
-  },
-  {
-    id: "s4", title: "Workshop Manager",
-    company: "Mahindra & Mahindra Ltd.", logo: "/logos/mahindra.png",
-    location: "Bangalore, Karnataka",   experience: "5-10 Years",
-    salary: "₹ 8 - 12 LPA",            posted: "5d ago",
-    featured: false, verified: false,  bg: "#cc0000",
-  },
-  {
-    id: "s5", title: "Parts Manager",
-    company: "TVS Motor Company",        logo: "/logos/tvsmotor.png",
-    location: "Chennai, Tamil Nadu",    experience: "4-8 Years",
-    salary: "₹ 5 - 9 LPA",             posted: "1w ago",
-    featured: false, verified: true,   bg: "#003366",
-  },
-  {
-    id: "s6", title: "EV Technician",
-    company: "Ather Energy",            logo: "/logos/atherenergy.png",
-    location: "Bengaluru, Karnataka",   experience: "1-3 Years",
-    salary: "₹ 3 - 5 LPA",             posted: "2d ago",
-    featured: true,  verified: true,   bg: "#00b894",
-  },
-  {
-    id: "s7", title: "Auto Electrician",
-    company: "Hero MotoCorp",           logo: "/logos/heromotocorp.png",
-    location: "Gurugram, Haryana",      experience: "2-4 Years",
-    salary: "₹ 2.5 - 4.5 LPA",         posted: "4d ago",
-    featured: false, verified: true,   bg: "#cc0000",
-  },
-  {
-    id: "s8", title: "Showroom Manager",
-    company: "Bajaj Auto",              logo: "/logos/bajajauto.png",
-    location: "Aurangabad, Maharashtra", experience: "5-8 Years",
-    salary: "₹ 7 - 11 LPA",            posted: "6d ago",
-    featured: false, verified: true,   bg: "#003399",
-  },
-];
+/** What a JobCard renders, flattened from the API's nested job shape. */
+interface JobCardData {
+  id: string;
+  title: string;
+  company: string;
+  logo: string;
+  location: string;
+  experience: string;
+  salary: string;
+  posted: string;
+  verified: boolean;
+}
 
-type StaticJob = (typeof STATIC_JOBS)[0];
+/** "2d ago" / "3w ago" — a job posted today should not read as a date. */
+function postedAgo(iso: string | Date): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "Recently";
+
+  const days = Math.floor((Date.now() - then) / 86_400_000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "1d ago";
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
 
 /* ─── Sub-components ─────────────────────────────────────── */
 
@@ -135,9 +79,9 @@ function CompanyLogo({ src, name, size = 56 }: { src: string; name: string; size
 }
 
 function FilterCheck({
-  label, count, checked, onChange,
+  label, checked, onChange,
 }: {
-  label: string; count: number; checked: boolean; onChange: () => void;
+  label: string; checked: boolean; onChange: () => void;
 }) {
   return (
     <label className="flex items-center justify-between gap-2 py-[5px] cursor-pointer group select-none">
@@ -165,11 +109,6 @@ function FilterCheck({
           {label}
         </span>
       </span>
-      <span
-        className={`text-[10.5px] font-bold px-[7px] py-[1px] rounded-full shrink-0 ${checked ? "bg-[#2563EB] text-white" : "bg-[#EFF6FF] text-[#2563EB]"}`}
-      >
-        {count}
-      </span>
     </label>
   );
 }
@@ -177,7 +116,7 @@ function FilterCheck({
 function JobCard({
   job, bookmarked, onBookmark,
 }: {
-  job: StaticJob; bookmarked: boolean; onBookmark: () => void;
+  job: JobCardData; bookmarked: boolean; onBookmark: () => void;
 }) {
   return (
     <Link
@@ -196,12 +135,6 @@ function JobCard({
           <h3 className="text-[14.5px] font-semibold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate leading-snug">
             {job.title}
           </h3>
-          {job.featured && (
-            <span className="shrink-0 flex items-center gap-1 text-[10.5px] font-semibold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] rounded-full px-2 py-[2px]">
-              <Star className="w-[9px] h-[9px] fill-[#2563EB]" />
-              Featured
-            </span>
-          )}
         </div>
 
         <div className="flex items-center gap-1.5 mb-[10px]">
@@ -256,12 +189,18 @@ function FilterSidebar({
   checkedExp,  setCheckedExp,
   checkedTypes,setCheckedTypes,
   salaryMax,   setSalaryMax,
+  locationText, setLocationText,
+  categories, experienceLevels, jobTypes,
   clearAll,    hasFilters,
 }: {
   checkedCats: string[];  setCheckedCats: (v: string[]) => void;
   checkedExp:  string[];  setCheckedExp:  (v: string[]) => void;
   checkedTypes: string[]; setCheckedTypes: (v: string[]) => void;
   salaryMax:   number;    setSalaryMax:   (v: number) => void;
+  locationText: string;   setLocationText: (v: string) => void;
+  categories: TaxonomyOption[];
+  experienceLevels: TaxonomyOption[];
+  jobTypes: TaxonomyOption[];
   clearAll: () => void;   hasFilters: boolean;
 }) {
   const toggle = (list: string[], set: (v: string[]) => void, val: string) =>
@@ -290,11 +229,11 @@ function FilterSidebar({
         Job Category
       </p>
       <div className="space-y-[1px] mb-1">
-        {CATEGORY_FILTERS.map(f => (
+        {categories.map(c => (
           <FilterCheck
-            key={f.label} label={f.label} count={f.count}
-            checked={checkedCats.includes(f.label)}
-            onChange={() => toggle(checkedCats, setCheckedCats, f.label)}
+            key={c.value} label={c.label}
+            checked={checkedCats.includes(c.value)}
+            onChange={() => toggle(checkedCats, setCheckedCats, c.value)}
           />
         ))}
       </div>
@@ -305,11 +244,11 @@ function FilterSidebar({
         Experience
       </p>
       <div className="space-y-[1px] mb-1">
-        {EXPERIENCE_FILTERS.map(f => (
+        {experienceLevels.map(({ value, label }) => (
           <FilterCheck
-            key={f.label} label={f.label} count={f.count}
-            checked={checkedExp.includes(f.label)}
-            onChange={() => toggle(checkedExp, setCheckedExp, f.label)}
+            key={value} label={label}
+            checked={checkedExp.includes(value)}
+            onChange={() => toggle(checkedExp, setCheckedExp, value)}
           />
         ))}
       </div>
@@ -320,11 +259,11 @@ function FilterSidebar({
         Job Type
       </p>
       <div className="space-y-[1px] mb-1">
-        {JOB_TYPE_FILTERS.map(f => (
+        {jobTypes.map(({ value, label }) => (
           <FilterCheck
-            key={f.label} label={f.label} count={f.count}
-            checked={checkedTypes.includes(f.label)}
-            onChange={() => toggle(checkedTypes, setCheckedTypes, f.label)}
+            key={value} label={label}
+            checked={checkedTypes.includes(value)}
+            onChange={() => toggle(checkedTypes, setCheckedTypes, value)}
           />
         ))}
       </div>
@@ -357,6 +296,8 @@ function FilterSidebar({
       <div className="flex items-center gap-2 border border-[#E8EDF5] rounded-[10px] px-3 py-2 bg-[#F8FAFC] focus-within:border-[#2563EB] transition-colors">
         <Search className="w-[13px] h-[13px] text-[#94A3B8] shrink-0" />
         <input
+          value={locationText}
+          onChange={e => setLocationText(e.target.value)}
           placeholder="Search location"
           className="text-[12.5px] text-[#475569] placeholder-[#94A3B8] outline-none bg-transparent flex-1"
         />
@@ -380,11 +321,24 @@ export default function JobsPage() {
   const [filtersOpen,  setFiltersOpen] = useState(false);
   const [alertEmail,   setAlertEmail]  = useState("");
   const [alertSent,    setAlertSent]   = useState(false);
-  const [liveJobs,     setLiveJobs]    = useState<Job[]>([]);
-  const [total,        setTotal]       = useState(1250);
-  const [loading,      setLoading]     = useState(false);
+  const [jobs,         setJobs]        = useState<Job[]>([]);
+  const [total,        setTotal]       = useState(0);
+  const [pages,        setPages]       = useState(1);
+  const [page,         setPage]        = useState(1);
+  const [loading,      setLoading]     = useState(true);
+  const [failed,       setFailed]      = useState(false);
   const [sort,         setSort]        = useState("Latest");
+  const [nearMe,       setNearMe]      = useState(true);
+  const [nearLabel,    setNearLabel]   = useState<string | null>(null);
+  // The search bar only applies on submit, so typing does not fire a request
+  // per keystroke; the sidebar filters apply immediately.
+  const [query,        setQuery]       = useState({ keyword: "", location: "", category: "" });
   const catRef = useRef<HTMLDivElement>(null);
+
+  // Admin-managed lists, so a category added in the panel shows up here.
+  const categories = useTaxonomy("JOB_CATEGORY");
+  const experienceLevels = useTaxonomy("EXPERIENCE_LEVEL");
+  const jobTypes = useTaxonomy("EMPLOYMENT_TYPE");
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -400,22 +354,69 @@ export default function JobsPage() {
     return () => { document.body.style.overflow = ""; };
   }, [filtersOpen]);
 
-  const displayJobs: StaticJob[] = liveJobs.length
-    ? liveJobs.map(j => ({
-        id: j.id, title: j.title,
-        company: j.company?.name || "Company",
-        logo: j.company?.logo || "",
-        location: j.location || "India",
-        experience: j.experience || "Any",
-        salary: salaryRangeLabel(j.minSalary, j.maxSalary),
-        posted: new Date(j.createdAt).toLocaleDateString(),
-        featured: false, verified: j.company?.isVerified || false,
-        bg: "#1e40af",
-      }))
-    : STATIC_JOBS;
+  const categoryParam = [query.category, ...checkedCats].filter(Boolean).join(",");
+
+  useEffect(() => {
+    // Ignore a slower earlier response that lands after a newer one.
+    let live = true;
+    setLoading(true);
+
+    const params = new URLSearchParams({ page: String(page), limit: "12" });
+    if (query.keyword) params.set("search", query.keyword);
+    if (query.location) params.set("location", query.location);
+    if (categoryParam) params.set("category", categoryParam);
+    if (checkedTypes.length) params.set("jobType", checkedTypes.join(","));
+    if (checkedExp.length) params.set("experience", checkedExp.join(","));
+    if (salaryMax < 2000000) params.set("maxSalary", String(salaryMax));
+    if (sort !== "Latest") {
+      params.set("sort", sort === "Salary: High to Low" ? "salary_desc" : "salary_asc");
+    }
+    if (nearMe) params.set("nearMe", "1");
+
+    fetch(`/api/jobs?${params}`)
+      .then(res => res.ok ? res.json() : Promise.reject(new Error(String(res.status))))
+      .then(data => {
+        if (!live) return;
+        setJobs(data.jobs ?? []);
+        setTotal(data.total ?? 0);
+        setPages(data.pages ?? 1);
+        setNearLabel(data.nearMe ? data.nearLabel ?? null : null);
+        setFailed(false);
+      })
+      .catch(() => {
+        if (!live) return;
+        setJobs([]);
+        setTotal(0);
+        setFailed(true);
+      })
+      .finally(() => { if (live) setLoading(false); });
+
+    return () => { live = false; };
+  }, [page, query, categoryParam, checkedTypes, checkedExp, salaryMax, nearMe, sort]);
+
+  const displayJobs: JobCardData[] = jobs.map(j => ({
+    id: j.id,
+    title: j.title,
+    company: j.company?.name || "Company",
+    logo: j.company?.logo || "",
+    location: j.location || "India",
+    experience: j.experience || "Any",
+    salary: salaryRangeLabel(j.minSalary, j.maxSalary),
+    posted: postedAgo(j.createdAt),
+    verified: j.company?.isVerified || false,
+  }));
 
   const hasFilters = checkedCats.length > 0 || checkedExp.length > 0 || checkedTypes.length > 0 || salaryMax < 2000000;
-  const clearAll = () => { setCheckedCats([]); setCheckedExp([]); setCheckedTypes([]); setSalaryMax(2000000); };
+  const hasQuery = Boolean(query.keyword || query.location || query.category);
+  const clearAll = () => {
+    setCheckedCats([]); setCheckedExp([]); setCheckedTypes([]); setSalaryMax(2000000);
+    setPage(1);
+  };
+
+  const runSearch = () => {
+    setQuery({ keyword, location, category });
+    setPage(1);
+  };
 
   const handleSubscribe = () => {
     if (alertEmail) { setAlertSent(true); setTimeout(() => setAlertSent(false), 3000); setAlertEmail(""); }
@@ -446,7 +447,11 @@ export default function JobsPage() {
             Automotive Industry
           </h1>
           <p className="text-[13.5px] sm:text-[15px] text-[#93C5FD] mb-5 font-medium">
-            Discover {total.toLocaleString()}+ job opportunities across dealerships, workshops and OEMs
+            {loading
+              ? "Loading opportunities across dealerships, workshops and OEMs"
+              : total > 0
+                ? `Discover ${total.toLocaleString()} job ${total === 1 ? "opening" : "openings"} across dealerships, workshops and OEMs`
+                : "New openings from dealerships, workshops and OEMs land here first"}
           </p>
 
           {/* ── Search bar ── */}
@@ -460,6 +465,7 @@ export default function JobsPage() {
               <input
                 value={keyword}
                 onChange={e => setKeyword(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") runSearch(); }}
                 placeholder="Job title, role or keywords"
                 className="flex-1 text-[13.5px] text-[#0F172A] placeholder-[#94A3B8] outline-none bg-transparent min-w-0"
               />
@@ -470,6 +476,7 @@ export default function JobsPage() {
               <input
                 value={location}
                 onChange={e => setLocation(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") runSearch(); }}
                 placeholder="City or location"
                 className="flex-1 text-[13.5px] text-[#0F172A] placeholder-[#94A3B8] outline-none bg-transparent min-w-0"
               />
@@ -482,7 +489,7 @@ export default function JobsPage() {
             >
               <Briefcase className="w-4 h-4 text-[#94A3B8] shrink-0" />
               <span className={`flex-1 text-[13.5px] truncate ${category ? "text-[#0F172A]" : "text-[#94A3B8]"}`}>
-                {category || "Job category"}
+                {categories.find(c => c.value === category)?.label || "Job category"}
               </span>
               <ChevronDown className={`w-4 h-4 text-[#94A3B8] shrink-0 transition-transform duration-200 ${catOpen ? "rotate-180" : ""}`} />
               {catOpen && (
@@ -493,10 +500,10 @@ export default function JobsPage() {
                   >
                     All Categories
                   </button>
-                  {JOB_CATEGORIES.map(c => (
+                  {categories.map(c => (
                     <button
-                      key={c.id}
-                      onClick={e => { e.stopPropagation(); setCategory(c.label); setCatOpen(false); }}
+                      key={c.value}
+                      onClick={e => { e.stopPropagation(); setCategory(c.value); setCatOpen(false); }}
                       className="block w-full text-left px-4 py-2.5 text-[12.5px] text-[#475569] hover:bg-[#F8FAFC] hover:text-[#2563EB] transition-colors"
                     >
                       {c.label}
@@ -506,7 +513,10 @@ export default function JobsPage() {
               )}
             </div>
             {/* Search button */}
-            <button className="flex items-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] text-white text-[13.5px] font-semibold px-7 h-full transition-colors shrink-0 rounded-r-[18px]">
+            <button
+              onClick={runSearch}
+              className="flex items-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-[#1E40AF] text-white text-[13.5px] font-semibold px-7 h-full transition-colors shrink-0 rounded-r-[18px]"
+            >
               <Search className="w-[15px] h-[15px]" />
               Search Jobs
             </button>
@@ -518,7 +528,7 @@ export default function JobsPage() {
             {POPULAR_SEARCHES.map(s => (
               <button
                 key={s}
-                onClick={() => setKeyword(s)}
+                onClick={() => { setKeyword(s); setQuery({ keyword: s, location, category }); setPage(1); }}
                 className="text-[12px] text-white border border-white/25 rounded-full px-3 py-[4px] hover:bg-white/12 hover:border-white/50 transition-all duration-150"
               >
                 {s}
@@ -541,6 +551,8 @@ export default function JobsPage() {
               checkedExp={checkedExp}   setCheckedExp={setCheckedExp}
               checkedTypes={checkedTypes} setCheckedTypes={setCheckedTypes}
               salaryMax={salaryMax}     setSalaryMax={setSalaryMax}
+              locationText={location}   setLocationText={setLocation}
+              categories={categories}   experienceLevels={experienceLevels} jobTypes={jobTypes}
               clearAll={clearAll}       hasFilters={hasFilters}
             />
           </aside>
@@ -548,20 +560,43 @@ export default function JobsPage() {
           {/* ── CENTER: JOB LISTINGS ── */}
           <main className="flex-1 min-w-0">
             {/* Top bar */}
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[14px] font-bold text-[#0F172A]">
-                {total.toLocaleString()} Jobs Found
-              </p>
+            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+              <div className="min-w-0">
+                <p className="text-[14px] font-bold text-[#0F172A]">
+                  {loading ? "Searching…" : `${total.toLocaleString()} ${total === 1 ? "Job" : "Jobs"} Found`}
+                </p>
+                {nearLabel && !loading && (
+                  <p className="text-[12px] text-[#64748B] mt-0.5">
+                    Showing jobs near {nearLabel} first —{" "}
+                    <button
+                      onClick={() => { setNearMe(false); setPage(1); }}
+                      className="font-semibold text-[#2563EB] hover:underline"
+                    >
+                      show all jobs
+                    </button>
+                  </p>
+                )}
+                {!nearMe && !loading && (
+                  <p className="text-[12px] text-[#64748B] mt-0.5">
+                    Sorted by newest —{" "}
+                    <button
+                      onClick={() => { setNearMe(true); setPage(1); }}
+                      className="font-semibold text-[#2563EB] hover:underline"
+                    >
+                      sort by my location
+                    </button>
+                  </p>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-[12.5px] text-[#64748B]">Sort by:</span>
                 <div className="relative">
                   <select
                     value={sort}
-                    onChange={e => setSort(e.target.value)}
+                    onChange={e => { setSort(e.target.value); setPage(1); }}
                     className="appearance-none text-[13px] font-semibold text-[#0F172A] bg-white border border-[#E8EDF5] rounded-[10px] px-3 pr-8 py-[6px] outline-none cursor-pointer"
                   >
                     <option>Latest</option>
-                    <option>Most Relevant</option>
                     <option>Salary: High to Low</option>
                     <option>Salary: Low to High</option>
                   </select>
@@ -590,6 +625,48 @@ export default function JobsPage() {
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="w-8 h-8 text-[#2563EB] animate-spin" />
                 </div>
+              ) : failed ? (
+                <div className="bg-white border border-[#E8EDF5] rounded-[20px] py-16 px-6 text-center">
+                  <p className="text-[15px] font-bold text-[#0F172A]">Could not load jobs</p>
+                  <p className="text-[13px] text-[#64748B] mt-1.5">
+                    Something went wrong on our side. Please try again.
+                  </p>
+                  <button
+                    onClick={() => setQuery(q => ({ ...q }))}
+                    className="mt-4 px-6 py-[9px] bg-[#2563EB] text-white text-[13px] font-semibold rounded-[10px] hover:bg-[#1D4ED8] transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : displayJobs.length === 0 ? (
+                <div className="bg-white border border-[#E8EDF5] rounded-[20px] py-16 px-6 text-center">
+                  {hasFilters || hasQuery ? (
+                    <>
+                      <p className="text-[15px] font-bold text-[#0F172A]">No jobs match your filters</p>
+                      <p className="text-[13px] text-[#64748B] mt-1.5">
+                        Try widening your search or removing a few filters.
+                      </p>
+                      <button
+                        onClick={() => {
+                          clearAll();
+                          setKeyword(""); setLocation(""); setCategory("");
+                          setQuery({ keyword: "", location: "", category: "" });
+                        }}
+                        className="mt-4 px-6 py-[9px] bg-[#2563EB] text-white text-[13px] font-semibold rounded-[10px] hover:bg-[#1D4ED8] transition-colors"
+                      >
+                        Clear all filters
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[15px] font-bold text-[#0F172A]">No jobs posted yet</p>
+                      <p className="text-[13px] text-[#64748B] mt-1.5">
+                        New openings appear here as soon as employers post them. Set up a job alert
+                        below and we&apos;ll email you the moment one goes live.
+                      </p>
+                    </>
+                  )}
+                </div>
               ) : (
                 displayJobs.map(job => (
                   <JobCard
@@ -606,12 +683,28 @@ export default function JobsPage() {
               )}
             </div>
 
-            {/* Load more */}
-            <div className="text-center mt-8">
-              <button className="px-8 py-[10px] border border-[#E8EDF5] bg-white text-[13.5px] font-semibold text-[#475569] rounded-[12px] hover:border-[#2563EB] hover:text-[#2563EB] hover:shadow-[0_2px_12px_rgba(37,99,235,0.10)] transition-all duration-200">
-                Load More Jobs
-              </button>
-            </div>
+            {/* Pagination */}
+            {!loading && !failed && pages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <button
+                  disabled={page <= 1}
+                  onClick={() => { setPage(p => p - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  className="px-5 py-[9px] border border-[#E8EDF5] bg-white text-[13px] font-semibold text-[#475569] rounded-[10px] enabled:hover:border-[#2563EB] enabled:hover:text-[#2563EB] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  Previous
+                </button>
+                <span className="text-[13px] text-[#64748B] px-2">
+                  Page {page} of {pages}
+                </span>
+                <button
+                  disabled={page >= pages}
+                  onClick={() => { setPage(p => p + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  className="px-5 py-[9px] border border-[#E8EDF5] bg-white text-[13px] font-semibold text-[#475569] rounded-[10px] enabled:hover:border-[#2563EB] enabled:hover:text-[#2563EB] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </main>
 
           {/* ── RIGHT SIDEBAR ── */}
@@ -764,12 +857,14 @@ export default function JobsPage() {
                 checkedExp={checkedExp}   setCheckedExp={setCheckedExp}
                 checkedTypes={checkedTypes} setCheckedTypes={setCheckedTypes}
                 salaryMax={salaryMax}     setSalaryMax={setSalaryMax}
+                locationText={location}   setLocationText={setLocation}
+                categories={categories}   experienceLevels={experienceLevels} jobTypes={jobTypes}
                 clearAll={clearAll}       hasFilters={hasFilters}
               />
             </div>
             <div className="sticky bottom-0 px-5 pt-3 pb-6 border-t border-[#F1F5F9] bg-white">
               <button
-                onClick={() => setFiltersOpen(false)}
+                onClick={() => { runSearch(); setFiltersOpen(false); }}
                 className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[15px] font-semibold py-3.5 rounded-[14px] transition-colors active:scale-[0.98]"
               >
                 Apply Filters

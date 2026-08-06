@@ -2,17 +2,18 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, PenLine } from 'lucide-react';
-import { BLOG_POSTS, formatPostDate, getPost } from '@/lib/blog';
+import { formatPostDate } from '@/lib/blog-types';
+import { getPostBySlug, listPosts } from '@/lib/blog-db';
 
-export function generateStaticParams() {
-  return BLOG_POSTS.map((post) => ({ slug: post.slug }));
-}
+// DATABASE_URL is injected at runtime, not at docker build, so posts cannot be
+// enumerated or prerendered during the image build.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(
   props: PageProps<'/blog/[slug]'>
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const post = getPost(slug);
+  const post = await getPostBySlug(slug);
   if (!post) return { title: 'Post not found' };
 
   return {
@@ -31,10 +32,10 @@ export async function generateMetadata(
 
 export default async function BlogPostPage(props: PageProps<'/blog/[slug]'>) {
   const { slug } = await props.params;
-  const post = getPost(slug);
+  const post = await getPostBySlug(slug);
   if (!post) notFound();
 
-  const related = BLOG_POSTS.filter((p) => p.slug !== post.slug).slice(0, 2);
+  const related = (await listPosts()).filter((p) => p.slug !== post.slug).slice(0, 2);
 
   return (
     <article className="max-w-3xl mx-auto px-5 sm:px-8 lg:px-10 py-12 lg:py-16">

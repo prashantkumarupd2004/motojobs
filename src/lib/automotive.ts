@@ -65,7 +65,7 @@ export const CATEGORY_BY_JOB_TITLE: Record<string, CategoryId> = Object.fromEntr
   JOB_TITLES.map((t) => [t.title, t.category])
 );
 
-export const ROLES_BY_CATEGORY: Record<CategoryId, string[]> = {
+export const ROLES_BY_CATEGORY: Record<string, string[]> = {
   sales: [
     'Sales Consultant',
     'Senior Sales Executive',

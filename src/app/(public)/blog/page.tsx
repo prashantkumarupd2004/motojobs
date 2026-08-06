@@ -1,55 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
   Search, PenLine, Calendar, Clock, Mail, RefreshCw,
 } from 'lucide-react';
-import { BLOG_POSTS, formatPostDate } from '@/lib/blog';
-import type { BlogPost } from '@/lib/blog';
+import { formatPostDate } from '@/lib/blog-types';
+import type { BlogPost } from '@/lib/blog-types';
 
-/* ─── Additional posts to fill the grid ─────────────────────── */
-const EXTRA_POSTS: BlogPost[] = [
-  {
-    slug: 'sales-consultant-target-tips',
-    title: 'How top-performing sales consultants consistently hit monthly targets',
-    excerpt: 'Sustainable target achievement comes from pipeline discipline, not heroic closing. These habits separate consistent performers from streaky ones.',
-    category: 'Sales',
-    author: 'MotoJobs Editorial',
-    publishedAt: '2026-07-18',
-    readMinutes: 5,
-    body: [],
-  },
-  {
-    slug: 'workshop-manager-career-path',
-    title: 'From technician to workshop manager: the career path explained',
-    excerpt: 'Most workshop managers began as technicians. The transition requires a deliberate skill shift — here is what that looks like in practice.',
-    category: 'Career Growth',
-    author: 'MotoJobs Editorial',
-    publishedAt: '2026-07-10',
-    readMinutes: 6,
-    body: [],
-  },
-  {
-    slug: 'oem-vs-dealership-career',
-    title: 'OEM vs dealership careers: which path is right for you?',
-    excerpt: 'Working for a manufacturer and working for a dealer feel very different day to day. Understanding the trade-offs helps you pick the right starting point.',
-    category: 'Career Growth',
-    author: 'MotoJobs Editorial',
-    publishedAt: '2026-07-02',
-    readMinutes: 7,
-    body: [],
-  },
-];
-
-const ALL_POSTS = [...BLOG_POSTS, ...EXTRA_POSTS];
-
-/* ─── Category pill data ────────────────────────────────────── */
-const CATEGORIES = [
-  'All', 'Interview Prep', 'Resume Tips', 'Career Growth',
-  'Technician', 'Sales', 'Service Advisor', 'Workshop', 'OEM', 'EV',
-];
 
 /* ─── Image map: slug → hero image ──────────────────────────── */
 const IMG_MAP: Record<string, string> = {
@@ -148,9 +107,30 @@ export default function BlogPage() {
   const [newsEmail,   setNewsEmail]   = useState('');
   const [subscribed,  setSubscribed]  = useState(false);
   const [visibleCount, setVisible]    = useState(6);
+  const [posts,       setPosts]       = useState<BlogPost[]>([]);
+  const [tags,        setTags]        = useState<string[]>([]);
+  const [loading,     setLoading]     = useState(true);
+
+  useEffect(() => {
+    let live = true;
+    fetch('/api/blog')
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((json) => {
+        if (!live) return;
+        setPosts(Array.isArray(json.posts) ? json.posts : []);
+        // Pills come from the posts that exist, so an admin-added category shows
+        // up without a code change and a retired one stops being offered.
+        setTags(Array.isArray(json.categories) ? json.categories : []);
+      })
+      .catch(() => {})
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, []);
+
+  const categories = ['All', ...tags];
 
   /* Filter */
-  const filtered = ALL_POSTS.filter(p => {
+  const filtered = posts.filter(p => {
     const matchTag = activeTag === 'All' || p.category === activeTag;
     const matchQ   = !search || p.title.toLowerCase().includes(search.toLowerCase()) || p.category.toLowerCase().includes(search.toLowerCase());
     return matchTag && matchQ;
@@ -205,7 +185,7 @@ export default function BlogPage() {
 
             {/* Scrollable category pills */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5 flex-1">
-              {CATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <button
                   key={cat}
                   onClick={() => setActiveTag(cat)}
@@ -229,10 +209,25 @@ export default function BlogPage() {
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 py-8">
 
         {/* No results */}
-        {filtered.length === 0 && (
+        {loading && (
           <div className="text-center py-20">
-            <p className="text-[16px] font-semibold text-[#475569] mb-2">No articles found</p>
-            <p className="text-[14px] text-[#94A3B8]">Try a different keyword or category.</p>
+            <p className="text-[15px] font-semibold text-[#475569]">Loading articles…</p>
+          </div>
+        )}
+
+        {!loading && filtered.length === 0 && (
+          <div className="text-center py-20">
+            {posts.length === 0 ? (
+              <>
+                <p className="text-[16px] font-semibold text-[#475569] mb-2">No articles published yet</p>
+                <p className="text-[14px] text-[#94A3B8]">Career advice is on the way — check back soon.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[16px] font-semibold text-[#475569] mb-2">No articles found</p>
+                <p className="text-[14px] text-[#94A3B8]">Try a different keyword or category.</p>
+              </>
+            )}
           </div>
         )}
 

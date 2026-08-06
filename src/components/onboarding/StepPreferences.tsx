@@ -6,15 +6,16 @@ import {
   CITIES_BY_STATE,
   INDIAN_STATES,
   INTERESTED_ROLES,
-  JOB_TYPES,
   LANGUAGES,
   OEM_BRANDS,
 } from '@/lib/automotive';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
 import { Field, MultiSelect, SearchableSelect, TextInput } from '@/components/form';
 import SectionTitle from './SectionTitle';
 import type { StepProps } from './wizard-state';
 
 export default function StepPreferences({ state, patch, errors }: StepProps) {
+  const jobTypes = useTaxonomy('EMPLOYMENT_TYPE');
   const cities = useMemo(
     () => CITIES_BY_STATE[state.preferredState] ?? [],
     [state.preferredState]
@@ -99,7 +100,7 @@ export default function StepPreferences({ state, patch, errors }: StepProps) {
         <Field label="Employment type" required error={errors.employmentType} htmlFor="employmentType">
           <SearchableSelect
             id="employmentType"
-            options={JOB_TYPES}
+            options={jobTypes.map((t) => t.label)}
             value={state.employmentType}
             onChange={(employmentType) => patch({ employmentType })}
             placeholder="Select type"

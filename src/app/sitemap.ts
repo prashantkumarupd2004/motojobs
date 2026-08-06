@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
-import { BLOG_POSTS } from "@/lib/blog";
 import { SITE_URL } from "@/lib/site";
 
 // DATABASE_URL is injected by App Runner at runtime, not at docker build, so
@@ -32,19 +31,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route.priority,
   }));
 
-  for (const post of BLOG_POSTS) {
-    entries.push({
-      url: `${SITE_URL}/blog/${post.slug}`,
-      lastModified: new Date(post.publishedAt),
-      changeFrequency: "yearly",
-      priority: 0.5,
-    });
-  }
-
   // A sitemap that 500s tells a crawler to back off entirely, so a database
   // blip degrades to the static routes above rather than failing the response.
   try {
-    const [jobs, companies] = await Promise.all([
+    const [jobs, companies, posts] = await Promise.all([
       prisma.job.findMany({
         where: { status: "APPROVED" },
         select: { id: true, updatedAt: true },
@@ -57,7 +47,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         orderBy: { updatedAt: "desc" },
         take: 5000,
       }),
+      prisma.blogPost.findMany({
+        where: { status: "PUBLISHED" },
+        select: { slug: true, updatedAt: true },
+        orderBy: { updatedAt: "desc" },
+        take: 2000,
+      }),
     ]);
+
+    for (const post of posts) {
+      entries.push({
+        url: `${SITE_URL}/blog/${post.slug}`,
+        lastModified: post.updatedAt,
+        changeFrequency: "monthly",
+        priority: 0.5,
+      });
+    }
 
     for (const job of jobs) {
       entries.push({
