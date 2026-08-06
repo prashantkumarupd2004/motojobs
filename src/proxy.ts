@@ -17,6 +17,9 @@ import {
 const publicPaths = [
   "/",
   "/login",
+  // The admin sign-in form itself must be reachable without a session,
+  // otherwise the gate below would redirect it to itself forever.
+  "/admin/login",
   "/register",
   "/signup",
   "/verify-email",
@@ -57,6 +60,18 @@ function isPublic(pathname: string) {
   return publicPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+/**
+ * The admin panel has its own entrance. Sending an unauthenticated /admin
+ * request to the public /login would drop the visitor into the job seeker
+ * form, so admin paths bounce to /admin/login instead.
+ */
+function loginUrlFor(pathname: string, req: NextRequest) {
+  const isAdminPath = pathname === "/admin" || pathname.startsWith("/admin/");
+  const url = new URL(isAdminPath ? "/admin/login" : "/login", req.url);
+  url.searchParams.set("from", pathname);
+  return url;
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -91,9 +106,7 @@ export async function proxy(req: NextRequest) {
     if (isApi) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(loginUrlFor(pathname, req));
   }
 
   const user = await verifyJWT(token);
@@ -104,8 +117,7 @@ export async function proxy(req: NextRequest) {
       res.cookies.set("token", "", { path: "/", maxAge: 0 });
       return res;
     }
-    const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("from", pathname);
+    const loginUrl = loginUrlFor(pathname, req);
     const res = NextResponse.redirect(loginUrl);
     res.cookies.set("token", "", { path: "/", maxAge: 0 });
     return res;

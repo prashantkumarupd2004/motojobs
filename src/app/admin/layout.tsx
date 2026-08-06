@@ -92,6 +92,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth();
 
+  // The sign-in page lives under /admin so it shares the URL space, but it must
+  // render bare: there is no session yet, so a sidebar of links the visitor
+  // cannot follow would only be a dead frame around the form.
+  if (pathname === '/admin/login') return <>{children}</>;
+
   return (
     <div className="flex h-screen bg-canvas overflow-hidden">
       <div className="hidden lg:flex shrink-0">

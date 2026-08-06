@@ -38,15 +38,18 @@ export function useAuth() {
   }, [router]);
 
   const logout = useCallback(async () => {
+    // Captured before the state clears, so an admin returns to the admin
+    // entrance rather than the public job seeker form.
+    const wasAdmin = user?.role === 'ADMIN';
     try {
       await apiFetch('/api/auth/logout', { method: 'POST' });
     } finally {
       localStorage.removeItem('user');
       setUser(null);
-      router.push('/login');
+      router.push(wasAdmin ? '/admin/login' : '/login');
       router.refresh();
     }
-  }, [router]);
+  }, [router, user]);
 
   const updateUser = useCallback((updates: Partial<User>) => {
     setUser(prev => {

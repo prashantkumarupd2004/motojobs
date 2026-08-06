@@ -89,7 +89,7 @@ function generatePassword(length = 20) {
       });
 
   console.log(`\n${existing ? 'Password reset for' : 'Created'} Super Admin\n`);
-  console.log(`  Login page  https://www.motojobs.in/login`);
+  console.log(`  Login page  https://www.motojobs.in/admin/login`);
   console.log(`  Email       ${user.email}`);
   console.log(`  Password    ${password}`);
   console.log(`\nStore it in a password manager, then change it from`);
