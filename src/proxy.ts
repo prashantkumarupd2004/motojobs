@@ -30,6 +30,7 @@ const publicPaths = [
   "/company",
   "/pricing",
   "/blog",
+  "/about",
   "/contact",
   "/terms",
   "/privacy",

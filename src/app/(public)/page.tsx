@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Search,
   MapPin,
@@ -270,8 +271,18 @@ interface HomeData {
 
 
 export default function HomePage() {
+  const router = useRouter();
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchKeyword.trim()) params.set('q', searchKeyword.trim());
+    if (searchLocation.trim()) params.set('location', searchLocation.trim());
+    router.push(`/jobs${params.toString() ? '?' + params.toString() : ''}`);
+  };
 
   useEffect(() => {
     let live = true;
@@ -338,16 +349,32 @@ export default function HomePage() {
             <div style={{ display: 'flex', background: 'white', borderRadius: '12px', border: '1.5px solid #DBEAFE', boxShadow: '0 4px 20px rgba(37,99,235,0.12)', maxWidth: '560px', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, padding: '0 16px', height: '52px', borderRight: '1px solid #E2E8F0', minWidth: 0 }}>
                 <Search style={{ width: '16px', height: '16px', color: '#94A3B8', flexShrink: 0 }} />
-                <input type="text" placeholder="Job title, keywords..." style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '14px', color: '#0F172A', width: '100%' }} />
+                <input
+                  type="text"
+                  value={searchKeyword}
+                  onChange={e => setSearchKeyword(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
+                  placeholder="Job title, keywords..."
+                  style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '14px', color: '#0F172A', width: '100%' }}
+                />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, padding: '0 16px', height: '52px', minWidth: 0 }}>
                 <MapPin style={{ width: '16px', height: '16px', color: '#94A3B8', flexShrink: 0 }} />
-                <input type="text" placeholder="Location" style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '14px', color: '#0F172A', width: '100%' }} />
+                <input
+                  type="text"
+                  value={searchLocation}
+                  onChange={e => setSearchLocation(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
+                  placeholder="Location"
+                  style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '14px', color: '#0F172A', width: '100%' }}
+                />
               </div>
-              <Link href="/jobs" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#2563EB', color: 'white', fontWeight: 600, fontSize: '14.5px', padding: '0 24px', whiteSpace: 'nowrap', flexShrink: 0, textDecoration: 'none', transition: 'background 0.2s' }}
+              <button
+                onClick={handleSearch}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#2563EB', color: 'white', fontWeight: 600, fontSize: '14.5px', padding: '0 24px', whiteSpace: 'nowrap', flexShrink: 0, border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1D4ED8'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#2563EB'; }}
-              >Find Jobs</Link>
+              >Find Jobs</button>
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', marginTop: '20px' }}>

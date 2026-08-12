@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -309,8 +310,12 @@ function FilterSidebar({
 /* ─── Main page ─────────────────────────────────────────────── */
 
 export default function JobsPage() {
-  const [keyword,      setKeyword]     = useState("");
-  const [location,     setLocation]    = useState("");
+  const searchParams = useSearchParams();
+  const initKeyword  = searchParams.get("q") ?? "";
+  const initLocation = searchParams.get("location") ?? "";
+
+  const [keyword,      setKeyword]     = useState(initKeyword);
+  const [location,     setLocation]    = useState(initLocation);
   const [category,     setCategory]    = useState("");
   const [catOpen,      setCatOpen]     = useState(false);
   const [checkedCats,  setCheckedCats] = useState<string[]>([]);
@@ -332,7 +337,7 @@ export default function JobsPage() {
   const [nearLabel,    setNearLabel]   = useState<string | null>(null);
   // The search bar only applies on submit, so typing does not fire a request
   // per keystroke; the sidebar filters apply immediately.
-  const [query,        setQuery]       = useState({ keyword: "", location: "", category: "" });
+  const [query,        setQuery]       = useState({ keyword: initKeyword, location: initLocation, category: "" });
   const catRef = useRef<HTMLDivElement>(null);
 
   // Admin-managed lists, so a category added in the panel shows up here.

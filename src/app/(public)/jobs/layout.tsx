@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 
 const TITLE = 'Automobile Jobs in India — Dealership, Workshop & EV Roles';
 const DESCRIPTION =
@@ -12,5 +13,5 @@ export const metadata: Metadata = {
 };
 
 export default function JobsLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <Suspense>{children}</Suspense>;
 }
