@@ -40,7 +40,7 @@ const JOB_SEEKER_LINKS: [string, string][] = [
 ];
 
 const EMPLOYER_LINKS: [string, string][] = [
-  ['Post a Job', '/recruiter/post-job'],
+  ['Post a Job', '/login?role=recruiter'],
   ['Search Candidates', '/recruiter/candidate-search'],
   ['Pricing Plans', '/pricing'],
   ['Manage Jobs', '/recruiter/manage-jobs'],
