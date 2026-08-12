@@ -53,9 +53,11 @@ export async function generateMetadata(
   if (!company) return { title: 'Company not found' };
 
   const where = [company.city, company.state].filter(Boolean).join(', ');
-  const description =
-    company.description?.slice(0, 155).trim() ??
-    `Open automobile roles at ${company.name}${where ? ` in ${where}` : ''}. View jobs, company info and career opportunities.`;
+  const description = (
+    company.description
+      ? company.description.slice(0, 155).trim()
+      : null
+  ) ?? `Open automobile roles at ${company.name}${where ? ` in ${where}` : ''}. View jobs, company info and career opportunities.`;
 
   const title = `${company.name} — Jobs & Company Profile | MotoJobs.in`;
 
@@ -67,7 +69,7 @@ export async function generateMetadata(
       `${company.name} careers`,
       `${company.name} recruitment`,
       where ? `automobile jobs ${where}` : '',
-      company.industry ?? '',
+      company.industry ? company.industry : '',
       'automobile company jobs India',
     ].filter(Boolean).join(', '),
     alternates: { canonical: `/company/${slug}` },
@@ -115,7 +117,7 @@ export default async function CompanyPage(props: PageProps<'/company/[slug]'>) {
     ...(where ? { address: { '@type': 'PostalAddress', addressLocality: where, addressCountry: 'IN' } } : {}),
     ...(company.foundedYear ? { foundingDate: String(company.foundedYear) } : {}),
     ...(company.linkedinUrl ? { sameAs: [company.linkedinUrl] } : {}),
-    numberOfEmployees: company.size ?? undefined,
+    numberOfEmployees: company.size ? company.size : undefined,
   };
 
   return (

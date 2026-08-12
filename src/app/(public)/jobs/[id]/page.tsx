@@ -2,13 +2,21 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { SITE_URL } from '@/lib/site';
-import { serializeJob } from '@/lib/jobs';
+import { parseSkills } from '@/lib/jobs';
+import type { Job, Company, Recruiter } from '@/types';
 import JobDetailClient from './JobDetailClient';
 
+/* ── Type for the full hydrated job ─────────────────────────────────── */
+type FullJob = Job & {
+  company: (Company & { website?: string | null; headquarters?: string | null; linkedinUrl?: string | null }) | null;
+  recruiter: (Recruiter & { user: { name: string; email: string } | null }) | null;
+  _count: { applications: number };
+};
+
 /* ── Prisma fetch ─────────────────────────────────────────────────────── */
-async function getJob(id: string) {
+async function getJob(id: string): Promise<FullJob | null> {
   try {
-    const job = await prisma.job.findUnique({
+    const raw = await prisma.job.findUnique({
       where: { id, status: 'APPROVED' },
       include: {
         company: true,
@@ -16,10 +24,26 @@ async function getJob(id: string) {
         _count: { select: { applications: true } },
       },
     });
-    if (!job) return null;
+    if (!raw) return null;
+
     // Bump views in background — don't await
     prisma.job.update({ where: { id }, data: { views: { increment: 1 } } }).catch(() => {});
-    return serializeJob(job);
+
+    // Normalise Prisma nulls to match the Job interface (null → undefined)
+    return {
+      ...raw,
+      companyId: raw.companyId ?? undefined,
+      skills: parseSkills(raw.skills),
+      requirements: raw.requirements ?? undefined,
+      responsibilities: raw.responsibilities ?? undefined,
+      category: raw.category ?? undefined,
+      location: raw.location ?? undefined,
+      minSalary: raw.minSalary ?? undefined,
+      maxSalary: raw.maxSalary ?? undefined,
+      experience: raw.experience ?? undefined,
+      education: raw.education ?? undefined,
+      deadline: raw.deadline ?? undefined,
+    } as unknown as FullJob;
   } catch {
     return null;
   }
@@ -36,9 +60,13 @@ export async function generateMetadata(
   const company = job.company?.name ?? 'a leading automobile company';
   const location = job.location ?? 'India';
   const title = `${job.title} at ${company} — ${location} | MotoJobs.in`;
-  const description =
-    (job.description?.slice(0, 155).replace(/\s+/g, ' ').trim() + '…') ??
-    `Apply for ${job.title} at ${company} in ${location}. ${job.experience ? `${job.experience} experience required.` : ''} Full-time automotive job on MotoJobs.in.`;
+
+  const rawDesc = job.description
+    ? job.description.slice(0, 155).replace(/\s+/g, ' ').trim()
+    : null;
+  const description = rawDesc
+    ? rawDesc + '…'
+    : `Apply for ${job.title} at ${company} in ${location}.${job.experience ? ` ${job.experience} experience required.` : ''} Automotive job on MotoJobs.in.`;
 
   return {
     title,
@@ -50,7 +78,7 @@ export async function generateMetadata(
       'automobile job',
       'automotive job India',
       ...(job.skills ?? []),
-      job.category ?? '',
+      job.category ? job.category : '',
     ]
       .filter(Boolean)
       .join(', '),
@@ -69,7 +97,7 @@ export async function generateMetadata(
 }
 
 /* ── JobPosting JSON-LD ───────────────────────────────────────────────── */
-function JobPostingJsonLd({ job }: { job: ReturnType<typeof serializeJob> }) {
+function JobPostingJsonLd({ job }: { job: FullJob }) {
   const company = job.company?.name ?? 'MotoJobs Employer';
   const location = job.location ?? 'India';
 
@@ -77,9 +105,13 @@ function JobPostingJsonLd({ job }: { job: ReturnType<typeof serializeJob> }) {
     '@context': 'https://schema.org',
     '@type': 'JobPosting',
     title: job.title,
-    description: job.description ?? `${job.title} position at ${company}.`,
+    description: job.description
+      ? job.description
+      : `${job.title} position at ${company}.`,
     datePosted: new Date(job.createdAt).toISOString().split('T')[0],
-    employmentType: job.jobType?.toUpperCase().replace(/[- ]/g, '_') ?? 'FULL_TIME',
+    employmentType: job.jobType
+      ? job.jobType.toUpperCase().replace(/[- ]/g, '_')
+      : 'FULL_TIME',
     jobLocation: {
       '@type': 'Place',
       address: {
@@ -92,7 +124,6 @@ function JobPostingJsonLd({ job }: { job: ReturnType<typeof serializeJob> }) {
       '@type': 'Organization',
       name: company,
       ...(job.company?.logo ? { logo: job.company.logo } : {}),
-      ...(job.company?.website ? { sameAs: job.company.website } : {}),
     },
     url: `${SITE_URL}/jobs/${job.id}`,
     identifier: {
@@ -105,7 +136,7 @@ function JobPostingJsonLd({ job }: { job: ReturnType<typeof serializeJob> }) {
   if (job.minSalary || job.maxSalary) {
     schema.baseSalary = {
       '@type': 'MonetaryAmount',
-      currency: job.currency ?? 'INR',
+      currency: job.currency,
       value: {
         '@type': 'QuantitativeValue',
         ...(job.minSalary ? { minValue: job.minSalary } : {}),

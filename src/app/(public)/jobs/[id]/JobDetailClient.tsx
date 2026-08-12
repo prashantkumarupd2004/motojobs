@@ -10,7 +10,8 @@ import {
 import { apiFetch } from '@/lib/http';
 import type { Job } from '@/types';
 
-export default function JobDetailClient({ job }: { job: Job }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function JobDetailClient({ job }: { job: any }) {
   const router = useRouter();
   const [applying,       setApplying]       = useState(false);
   const [applied,        setApplied]        = useState(false);
@@ -113,7 +114,7 @@ export default function JobDetailClient({ job }: { job: Job }) {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {job.skills.map(skill => (
+                {job.skills?.map((skill: string) => (
                   <span key={skill} className="text-sm bg-brand-50 text-brand-700 border border-brand-100 rounded-lg px-3 py-1">{skill}</span>
                 ))}
               </div>
