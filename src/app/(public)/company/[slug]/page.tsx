@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { salaryRangeLabel } from '@/lib/automotive';
+import { SITE_URL } from '@/lib/site';
 
 async function getCompany(slug: string) {
   return prisma.company.findUnique({
@@ -46,26 +47,40 @@ export async function generateMetadata(
   const { slug } = await props.params;
   const company = await prisma.company.findUnique({
     where: { slug },
-    select: { name: true, description: true, city: true, state: true },
+    select: { name: true, description: true, city: true, state: true, industry: true, logo: true },
   });
 
   if (!company) return { title: 'Company not found' };
 
   const where = [company.city, company.state].filter(Boolean).join(', ');
   const description =
-    company.description?.slice(0, 155) ??
-    `Open automobile roles at ${company.name}${where ? ` in ${where}` : ''}.`;
+    company.description?.slice(0, 155).trim() ??
+    `Open automobile roles at ${company.name}${where ? ` in ${where}` : ''}. View jobs, company info and career opportunities.`;
+
+  const title = `${company.name} — Jobs & Company Profile | MotoJobs.in`;
 
   return {
-    title: `${company.name} — Jobs & Company Profile`,
+    title,
     description,
+    keywords: [
+      `${company.name} jobs`,
+      `${company.name} careers`,
+      `${company.name} recruitment`,
+      where ? `automobile jobs ${where}` : '',
+      company.industry ?? '',
+      'automobile company jobs India',
+    ].filter(Boolean).join(', '),
     alternates: { canonical: `/company/${slug}` },
     openGraph: {
-      title: `${company.name} — Jobs & Company Profile`,
+      title,
       description,
       url: `/company/${slug}`,
       type: 'profile',
+      images: company.logo
+        ? [{ url: company.logo, alt: `${company.name} logo` }]
+        : [{ url: '/logo-motojobs.png', width: 1341, height: 268, alt: 'MotoJobs.in' }],
     },
+    twitter: { card: 'summary_large_image', title, description },
   };
 }
 
@@ -79,7 +94,34 @@ export default async function CompanyPage(props: PageProps<'/company/[slug]'>) {
 
   const where = [company.city, company.state].filter(Boolean).join(', ');
 
+  /* ── Structured data ── */
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Companies', item: `${SITE_URL}/companies` },
+      { '@type': 'ListItem', position: 3, name: company.name, item: `${SITE_URL}/company/${slug}` },
+    ],
+  };
+
+  const orgSchema: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: company.name,
+    url: company.website ?? `${SITE_URL}/company/${slug}`,
+    ...(company.logo ? { logo: company.logo } : {}),
+    ...(company.description ? { description: company.description } : {}),
+    ...(where ? { address: { '@type': 'PostalAddress', addressLocality: where, addressCountry: 'IN' } } : {}),
+    ...(company.foundedYear ? { foundingDate: String(company.foundedYear) } : {}),
+    ...(company.linkedinUrl ? { sameAs: [company.linkedinUrl] } : {}),
+    numberOfEmployees: company.size ?? undefined,
+  };
+
   return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
     <div className="max-w-5xl mx-auto px-5 sm:px-8 lg:px-10 py-12 lg:py-16">
       <nav className="text-[13px] font-medium text-ink-faint mb-7">
         <Link href="/companies" className="hover:text-brand-700 transition-colors">
@@ -276,5 +318,6 @@ export default async function CompanyPage(props: PageProps<'/company/[slug]'>) {
         </section>
       )}
     </div>
+    </>
   );
 }

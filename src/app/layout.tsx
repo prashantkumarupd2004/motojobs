@@ -16,27 +16,89 @@ const sora = Sora({
   display: "swap",
 });
 
-const TITLE = "Motojobs.in — India's Automobile Sector Job Portal";
+const TITLE = "MotoJobs.in — India's #1 Automobile Job Portal";
 const DESCRIPTION =
-  "India's dedicated job portal for the automobile sector. Jobs at car and two-wheeler dealerships, service centres, workshops, OEMs and EV companies — Sales Consultant, Service Advisor, Technician, Workshop Manager and more.";
+  "Find automobile jobs across India at car dealerships, two-wheeler showrooms, service centres, OEMs and EV companies. Search Sales Consultant, Service Advisor, Technician, Workshop Manager and 500+ automotive roles.";
+
+const KEYWORDS = [
+  // Core
+  "automobile jobs India", "automotive jobs India", "car dealership jobs",
+  "two wheeler mechanic jobs", "automobile technician jobs", "service advisor jobs India",
+  "workshop manager jobs", "ITI automobile jobs", "EV jobs India", "electric vehicle jobs",
+  // Roles
+  "sales consultant automobile", "parts manager jobs", "BDE automobile", "showroom jobs",
+  "auto electrician jobs", "body shop jobs", "paint technician jobs", "diagnostic technician",
+  "fleet manager jobs", "service manager automobile", "vehicle inspector jobs",
+  "automobile engineer jobs", "quality control automobile", "PDI technician jobs",
+  // Cities
+  "automobile jobs Delhi", "automobile jobs Mumbai", "automobile jobs Bangalore",
+  "automobile jobs Chennai", "automobile jobs Hyderabad", "automobile jobs Pune",
+  "automobile jobs Kolkata", "automobile jobs Ahmedabad", "automobile jobs Jaipur",
+  "automobile jobs Lucknow", "automobile jobs Chandigarh", "automobile jobs Kochi",
+  // OEMs / Brands
+  "Maruti Suzuki dealership jobs", "Hyundai showroom jobs", "Tata Motors jobs",
+  "Mahindra dealership jobs", "Hero MotoCorp jobs", "Bajaj Auto jobs",
+  "Honda Cars jobs", "Toyota dealer jobs", "KIA dealership jobs",
+  // Niche
+  "automobile fresher jobs", "ITI pass automobile jobs", "diploma automobile jobs",
+  "auto ancillary jobs", "spare parts jobs", "automobile MBA jobs",
+  "job portal automobile India", "motojobs", "motojobs.in",
+].join(", ");
+
+/* ── JSON-LD: Organization ──────────────────────────────────────────── */
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "MotoJobs.in",
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo-motojobs.png`,
+  description: DESCRIPTION,
+  sameAs: [
+    "https://www.linkedin.com/company/motojobs-in",
+    "https://twitter.com/motojobsin",
+  ],
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer support",
+    url: `${SITE_URL}/contact`,
+    availableLanguage: ["English", "Hindi"],
+  },
+};
+
+/* ── JSON-LD: WebSite + SearchAction (Google Sitelinks Searchbox) ─────── */
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "MotoJobs.in",
+  url: SITE_URL,
+  description: DESCRIPTION,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${SITE_URL}/jobs?q={search_term_string}`,
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: TITLE,
-    template: "%s | Motojobs.in",
+    template: "%s | MotoJobs.in",
   },
   description: DESCRIPTION,
-  keywords: "automobile jobs, automotive jobs India, dealership jobs, service advisor jobs, car showroom jobs, automobile technician, ITI jobs, workshop jobs, EV jobs, two wheeler mechanic jobs",
+  keywords: KEYWORDS,
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
-    siteName: "Motojobs.in",
+    siteName: "MotoJobs.in",
     locale: "en_IN",
     url: "/",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: "/logo-motojobs.png", width: 1341, height: 268, alt: "Motojobs.in" }],
+    images: [{ url: "/logo-motojobs.png", width: 1341, height: 268, alt: "MotoJobs.in — India's Automobile Job Portal" }],
   },
   twitter: {
     card: "summary_large_image",
@@ -58,6 +120,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${sora.variable}`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+      </head>
       <body className="min-h-screen bg-canvas text-ink antialiased">
         {children}
       </body>
