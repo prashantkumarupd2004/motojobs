@@ -41,11 +41,6 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ key: string[] }> }
 ) {
-  const user = await getAuthUser(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   if (!STORAGE_CONFIGURED) {
     return NextResponse.json(
       { error: "File storage is not configured" },
@@ -61,8 +56,16 @@ export async function GET(
     return NextResponse.json({ error: "Invalid key" }, { status: 400 });
   }
 
-  if (!(await canRead(key, user))) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Images (company logos, avatars) are public assets — no auth needed.
+  if (!key.startsWith("images/")) {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!(await canRead(key, user))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   const url = await signedReadUrl(key);

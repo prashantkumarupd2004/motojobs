@@ -343,16 +343,49 @@
     from { transform: translateX(-100%); }
     to   { transform: translateX(0); }
   }
+  @keyframes slideInUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
   @keyframes countUp {
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  @keyframes pulseDot {
+    0%, 100% { transform: scale(1);   opacity: 1; }
+    50%       { transform: scale(1.2); opacity: 0.8; }
+  }
 
-  .animate-fade-up  { animation: fadeUp 0.6s var(--ease-premium) forwards; }
-  .animate-fade-in  { animation: fadeIn 0.5s var(--ease-glide) forwards; }
-  .animate-scale-in { animation: scaleIn 0.3s var(--ease-premium) forwards; }
-  .animate-float    { animation: float 5s ease-in-out infinite; }
-  .animate-slide-in { animation: slideInLeft 0.3s var(--ease-premium) forwards; }
+  .animate-fade-up    { animation: fadeUp 0.6s var(--ease-premium) forwards; }
+  .animate-fade-in    { animation: fadeIn 0.5s var(--ease-glide) forwards; }
+  .animate-scale-in   { animation: scaleIn 0.3s var(--ease-premium) forwards; }
+  .animate-float      { animation: float 5s ease-in-out infinite; }
+  .animate-slide-in   { animation: slideInLeft 0.3s var(--ease-premium) forwards; }
+  .animate-slide-up   { animation: slideInUp 0.35s var(--ease-premium) forwards; }
+  .animate-pulse-dot  { animation: pulseDot 2s ease-in-out infinite; }
+
+  /* Search-bar focus glow */
+  .search-glow:focus-within {
+    border-color: var(--color-brand-400);
+    box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.10);
+  }
+
+  /* Sidebar active nav item */
+  .nav-active {
+    background: linear-gradient(135deg, #1a56db 0%, #1D4ED8 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(26, 86, 219, 0.28);
+  }
+
+  /* Stat card hover lift */
+  .stat-card {
+    transition: transform 0.25s var(--ease-premium), box-shadow 0.25s var(--ease-premium), border-color 0.2s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+    border-color: var(--color-brand-200);
+  }
 
   /* Staggered reveal helpers */
   .stagger-1 { animation-delay: 0.05s; opacity: 0; }

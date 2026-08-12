@@ -40,6 +40,7 @@ const publicPaths = [
   "/api/blog",
   "/api/home",
   "/api/taxonomy",
+  "/api/files/images",
   "/_next",
   "/favicon.ico",
   "/robots.txt",
